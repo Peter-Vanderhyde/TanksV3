@@ -44,6 +44,8 @@ class Game:
 
         self.entities = {}
         self.living_entities = 0
+
+        self.user_input = []
     
     def create_entity(self, entity_id):
         component_indexes = [-1] * len(system_index)
@@ -93,6 +95,8 @@ class Graphics:
         self.image = get_image(image, self.transform_component.scale)
         self.image_width = self.image.get_width()
         self.image_height = self.image.get_height()
+        self.last_rotation = self.transform_component.rotation
+        self.last_used_image = self.image
 
 
 class System:
@@ -151,7 +155,10 @@ class GraphicsSystem(System):
     def update(self, screen):
         for component in self.components:
             if component != None:
-                screen.blit(component.image, (component.transform_component.x - component.image_width // 2, component.transform_component.y - component.image_height // 2))
+                if component.last_rotation != component.transform_component.rotation:
+                    component.last_rotation = component.transform_component.rotation
+                    component.last_used_image = pygame.transform.rotate(component.image, component.last_rotation)
+                screen.blit(component.last_used_image, (component.transform_component.x - component.image_width // 2, component.transform_component.y - component.image_height // 2))
 
 
 
@@ -186,6 +193,13 @@ class Quit(Event):
         sys.exit()
 
 
+def check_for_quit():
+    for event in game.user_input:
+        if event.type == KEYDOWN and event.key == K_ESCAPE:
+            event_handler.add_event(Quit())
+
+
+
 if __name__ == "__main__":
     white = (255, 255, 255)
     black = (0, 0, 0)
@@ -213,9 +227,6 @@ if __name__ == "__main__":
     event_handler = EventHandler()
     pygame.event.set_allowed([KEYDOWN])
 
-    g_ball = load_image("green_ball.png")
-    b_ball = load_image("blue_ball.png")
-    r_ball = load_image("red_ball.png")
     body = load_image("body.png", colorkey=white)
 
     game.create_entity(0)
@@ -226,10 +237,8 @@ if __name__ == "__main__":
     game.add_component(0, "physics", velocity * speed, game.get_component(0, "transform"))
 
     while 1:
-        for event in pygame.event.get():
-            if event.type == KEYDOWN and event.key == K_ESCAPE:
-                event_handler.add_event(Quit())
-        
+        game.user_input = pygame.event.get()
+        check_for_quit()
         event_handler.handle_events()
 
         current_time = time.time()
