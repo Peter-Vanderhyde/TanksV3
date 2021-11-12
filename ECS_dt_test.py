@@ -13,12 +13,12 @@ NUM_OF_COMPONENTS = 2
 
 screen = pygame.display.set_mode((750, 750))
 
-blue_ball = pygame.image.load("blue_ball.png").convert_alpha()
-red_ball = pygame.image.load("red_ball.png").convert_alpha()
-green_ball = pygame.image.load("green_ball.png").convert_alpha()
-blue_square = pygame.image.load("blue_square.png").convert()
-red_square = pygame.image.load("red_square.png").convert()
-green_square = pygame.image.load("green_square.png").convert()
+blue_ball = pygame.image.load("../blue_ball.png").convert_alpha()
+red_ball = pygame.image.load("../red_ball.png").convert_alpha()
+green_ball = pygame.image.load("../green_ball.png").convert_alpha()
+blue_square = pygame.image.load("../blue_square.png").convert()
+red_square = pygame.image.load("../red_square.png").convert()
+green_square = pygame.image.load("../green_square.png").convert()
 
 class Transform:
     def __init__(self, id, x, y, velocity, scale, bounce_percent):
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     BOUNCE = True
     SPEED = 150
     GRAVITY = 1000
-    MAX_ENTITIES = 5000
+    MAX_ENTITIES = 1000
     gravity = False
     emit = True
     emition_rate = 1
