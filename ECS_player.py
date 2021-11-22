@@ -2,6 +2,7 @@ import pygame
 import sys
 import time
 import random
+from components import *
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
@@ -72,96 +73,6 @@ class Game:
             raise Exception("Tried to get component that does not exist.")
 
 
-class Transform:
-    def __init__(self, id, x, y, rotation, scale):
-        self.id = id
-        self.x = x
-        self.y = y
-        self.rotation = rotation
-        self.scale = scale
-
-
-class Physics:
-    def __init__(self, id, velocity, transform_component):
-        self.id = id
-        self.velocity = velocity
-        self.transform_component = transform_component
-
-
-class Graphics:
-    def __init__(self, id, image, transform_component):
-        self.id = id
-        self.transform_component = transform_component
-        self.image = get_image(image, self.transform_component.scale)
-        self.image_width = self.image.get_width()
-        self.image_height = self.image.get_height()
-        self.last_rotation = self.transform_component.rotation
-        self.last_used_image = self.image
-
-
-class System:
-    def __init__(self, component_type):
-        self.component_type = component_type
-        self.components = [None]
-        self.first_available = 0
-    
-    def set_next_available(self):
-        for index, component in enumerate(self.components[self.first_available:], self.first_available):
-            if component == None:
-                self.first_available = index
-                return
-        self.first_available = len(self.components)
-        self.components.append(None)
-    
-    def add_component(self, *args, **kwargs):
-        index = self.first_available
-        self.components[index] = self.component_type(*args, **kwargs)
-        self.set_next_available()
-        return index
-    
-    def remove_component(self, index):
-        try:
-            self.components[index] = None
-        except:
-            raise Exception("Unable to remove component.")
-        
-        if index < self.first_available:
-            self.first_available = index
-    
-    def update(self):
-        pass
-
-
-class TransformSystem(System):
-    def __init__(self):
-        super().__init__(Transform)
-
-
-class PhysicsSystem(System):
-    def __init__(self):
-        super().__init__(Physics)
-    
-    def update(self, dt):
-        for component in self.components:
-            if component != None:
-                component.transform_component.x += component.velocity.x * dt
-                component.transform_component.y += component.velocity.y * dt
-
-
-class GraphicsSystem(System):
-    def __init__(self):
-        super().__init__(Graphics)
-    
-    def update(self, screen):
-        for component in self.components:
-            if component != None:
-                if component.last_rotation != component.transform_component.rotation:
-                    component.last_rotation = component.transform_component.rotation
-                    component.last_used_image = pygame.transform.rotate(component.image, component.last_rotation)
-                screen.blit(component.last_used_image, (component.transform_component.x - component.image_width // 2, component.transform_component.y - component.image_height // 2))
-
-
-
 class Event:
     def __init__(self, id=-1):
         self.id = id
@@ -204,24 +115,6 @@ if __name__ == "__main__":
     white = (255, 255, 255)
     black = (0, 0, 0)
 
-    images = {}
-
-    transform_sys = TransformSystem()
-    physics_sys = PhysicsSystem()
-    graphics_sys = GraphicsSystem()
-
-    systems = {
-        "transform":transform_sys,
-        "physics":physics_sys,
-        "graphics":graphics_sys
-    }
-    component_index = {
-        "transform":0,
-        "physics":1,
-        "graphics":2
-    }
-    system_index = [transform_sys, physics_sys, graphics_sys]
-
     screen = pygame.display.set_mode((500, 500))
     game = Game(screen)
     event_handler = EventHandler()
@@ -251,5 +144,6 @@ if __name__ == "__main__":
             game.accumulator -= game.dt
         
         screen.fill(white)
+        pygame.draw.rect(screen, black, (200, 200, 30, 30))
         graphics_sys.update(screen)
         pygame.display.update()
