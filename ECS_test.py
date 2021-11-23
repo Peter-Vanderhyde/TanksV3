@@ -5,7 +5,7 @@ import time
 from components import *
 from colors import *
 from settings import *
-from pygame import transform
+from actions import *
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
@@ -45,6 +45,8 @@ class Game:
         self.entities = {}
         self.living_entities = 0
         self.last_id = 0
+
+        self.action_handler = ActionHandler(input_handler_sys)
     
     def create_entity(self, entity_id):
         # Create [-1, -1, -1, etc] because we don't know what components it will have
@@ -84,7 +86,9 @@ def create_player(id, x, y, rotation, scale, velocity):
     game.create_entity(id)
     game.add_component(id, "transform", x, y, rotation, scale)
     game.add_component(id, "graphics", [(images["barrel"], 0, 0), (images["player_body"], 0, 0)], game.get_component(id, "transform"))
-    game.add_component(id, "controller", PlayerController(id, game.get_component(id, "transform")))
+    game.add_component(id, "physics", velocity, game.get_component(id, "transform"))
+    game.add_component(id, "controller", PlayerController(id, PLAYER_SPEED, PLAYER_ACCEL, game.get_component(id, "transform"), game.get_component(id, "physics")))
+    game.add_component(id, "input handler", PlayerInputHandler(id))
 
 
 if __name__ == "__main__":
@@ -97,15 +101,11 @@ if __name__ == "__main__":
     create_player(game.last_id, 300, 300, 0, 1, Vector2(0, 0))
 
     while 1:
-        for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
-                    quit()
-            elif event.type == MOUSEBUTTONDOWN:
-                id = game.last_id
-                velocity = Vector2(1, 0).rotate_ip(random.randrange(0, 360))
-                speed = random.randint(5, 200)
-                create_bullet(id, 300, 300, 0, 1, "player", velocity * speed)
+        '''elif event.type == MOUSEBUTTONDOWN:
+            id = game.last_id
+            velocity = Vector2(1, 0).rotate_ip(random.randrange(0, 360))
+            speed = random.randint(5, 200)
+            create_bullet(id, 300, 300, 0, 1, "player", velocity * speed)'''
 
         current_time = time.time()
         frame_time = current_time - game.last_time
@@ -116,6 +116,8 @@ if __name__ == "__main__":
             physics_sys.update(game.dt)
             game.accumulator -= game.dt
         
+        game.action_handler.get_player_input()
+        game.action_handler.handle_actions()
         controller_sys.update()
         
         screen.fill(black)

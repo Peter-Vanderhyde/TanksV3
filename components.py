@@ -1,5 +1,7 @@
 import pygame
 from pygame.math import Vector2
+from pygame.locals import *
+from actions import *
 
 
 class Transform:
@@ -28,6 +30,22 @@ class Graphics:
         self.last_used_images = [element[0] for element in self.images]
 
 
+class InputHandler:
+    def __init__(self, id, input_class):
+        self.id = id
+        self.input_class = input_class
+
+
+class PlayerInputHandler:
+    def __init__(self, id):
+        self.id = id
+    
+    def get_action(self, event):
+        if event.type == KEYDOWN:
+            if event.key == K_ESCAPE:
+                return Quit()
+
+
 class Controller:
     def __init__(self, id, controller_class):
         self.id = id
@@ -35,9 +53,12 @@ class Controller:
 
 
 class PlayerController:
-    def __init__(self, id, transform_component):
+    def __init__(self, id, max_velocity, acceleration, transform_component, physics_component):
         self.id = id
+        self.max_velocity = max_velocity
+        self.acceleration = acceleration
         self.transform_component = transform_component
+        self.physics_component = physics_component
     
     def update(self):
         transform = self.transform_component
@@ -125,21 +146,42 @@ class ControllerSystem(System):
                 component.controller_class.update()
 
 
+class InputHandlerSystem(System):
+    def __init__(self):
+        super().__init__(InputHandler)
+    
+    def create_player_action(self, event, handler):
+        for component in self.components:
+            if component is not None:
+                if isinstance(component.input_class, PlayerInputHandler):
+                    action = component.input_class.get_action(event)
+                    if action is not None:
+                        handler.add_action(action)
+    
+    def update(self):
+        for component in self.components:
+            if component is not None:
+                component.event_class.update()
+
+
 transform_sys = TransformSystem()
 physics_sys = PhysicsSystem()
 graphics_sys = GraphicsSystem()
 controller_sys = ControllerSystem()
+input_handler_sys = InputHandlerSystem()
 
 systems = {
     "transform":transform_sys,
     "physics":physics_sys,
     "graphics":graphics_sys,
-    "controller":controller_sys
+    "controller":controller_sys,
+    "input handler":input_handler_sys
 }
 component_index = {
     "transform":0,
     "physics":1,
     "graphics":2,
-    "controller":3
+    "controller":3,
+    "input handler":4
 }
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys]
+system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, input_handler_sys]
