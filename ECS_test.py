@@ -46,7 +46,7 @@ class Game:
         self.living_entities = 0
         self.last_id = 0
 
-        self.action_handler = ActionHandler(input_handler_sys)
+        self.action_handler = ActionHandler(self, input_handler_sys)
     
     def create_entity(self, entity_id):
         # Create [-1, -1, -1, etc] because we don't know what components it will have
@@ -56,7 +56,7 @@ class Game:
         self.last_id += 1
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
-        index = systems[component_name].add_component(entity_id, *args, **kwargs)
+        index = systems[component_name].add_component(self, entity_id, *args, **kwargs)
         self.entities[entity_id][component_index[component_name]] = index
     
     def destroy_entity(self, entity_id):
@@ -87,8 +87,8 @@ def create_player(id, x, y, rotation, scale, velocity):
     game.add_component(id, "transform", x, y, rotation, scale)
     game.add_component(id, "graphics", [(images["barrel"], 0, 0), (images["player_body"], 0, 0)], game.get_component(id, "transform"))
     game.add_component(id, "physics", velocity, game.get_component(id, "transform"))
-    game.add_component(id, "controller", PlayerController(id, PLAYER_SPEED, PLAYER_ACCEL, game.get_component(id, "transform"), game.get_component(id, "physics")))
-    game.add_component(id, "input handler", PlayerInputHandler(id))
+    game.add_component(id, "controller", PlayerController(game, id, PLAYER_SPEED, PLAYER_ACCEL, game.get_component(id, "transform"), game.get_component(id, "physics")))
+    game.add_component(id, "input handler", PlayerInputHandler(game, id, PLAYER_MOVE_KEYS))
 
 
 if __name__ == "__main__":

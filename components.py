@@ -4,25 +4,31 @@ from pygame.locals import *
 from actions import *
 
 
-class Transform:
-    def __init__(self, id, x, y, rotation, scale):
+class Component:
+    def __init__(self, game, id):
+        self.game = game
         self.id = id
+
+
+class Transform(Component):
+    def __init__(self, game, id, x, y, rotation, scale):
+        super().__init__(game, id)
         self.x = x
         self.y = y
         self.rotation = rotation
         self.scale = scale
 
 
-class Physics:
-    def __init__(self, id, velocity, transform_component):
-        self.id = id
+class Physics(Component):
+    def __init__(self, game, id, velocity, transform_component):
+        super().__init__(game, id)
         self.velocity = velocity
         self.transform_component = transform_component
 
 
-class Graphics:
-    def __init__(self, id, images, transform_component):
-        self.id = id
+class Graphics(Component):
+    def __init__(self, game, id, images, transform_component):
+        super().__init__(game, id)
         self.transform_component = transform_component
         # [(<name>, <offsetx>, <offsety>), (etc.)]
         self.images = images
@@ -30,31 +36,34 @@ class Graphics:
         self.last_used_images = [element[0] for element in self.images]
 
 
-class InputHandler:
-    def __init__(self, id, input_class):
-        self.id = id
+class InputHandler(Component):
+    def __init__(self, game, id, input_class):
+        super().__init__(game, id)
         self.input_class = input_class
 
 
-class PlayerInputHandler:
-    def __init__(self, id):
-        self.id = id
+class PlayerInputHandler(Component):
+    def __init__(self, game, id, move_keys):
+        super().__init__(game, id)
+        self.move_keys = move_keys
     
     def get_action(self, event):
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 return Quit()
+            if event.key == self.move_keys["left"]:
+                return MoveLeft(self.id, Vector2(-1, 0) * 100, 0.1, self.game.get_component(self.id, "physics"))
 
 
-class Controller:
-    def __init__(self, id, controller_class):
-        self.id = id
+class Controller(Component):
+    def __init__(self, game, id, controller_class):
+        super().__init__(game, id)
         self.controller_class = controller_class
 
 
-class PlayerController:
-    def __init__(self, id, max_velocity, acceleration, transform_component, physics_component):
-        self.id = id
+class PlayerController(Component):
+    def __init__(self, game, id, max_velocity, acceleration, transform_component, physics_component):
+        super().__init__(game, id)
         self.max_velocity = max_velocity
         self.acceleration = acceleration
         self.transform_component = transform_component
@@ -81,9 +90,9 @@ class System:
         self.first_available = len(self.components)
         self.components.append(None)
     
-    def add_component(self, *args, **kwargs):
+    def add_component(self, game, *args, **kwargs):
         index = self.first_available
-        self.components[index] = self.component_type(*args, **kwargs)
+        self.components[index] = self.component_type(game, *args, **kwargs)
         self.set_next_available()
         return index
     
