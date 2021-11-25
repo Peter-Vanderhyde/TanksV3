@@ -76,17 +76,17 @@ class Game:
             raise Exception("Tried to get component that does not exist.")
 
 
-def create_bullet(id, x, y, rotation, scale, owner, velocity):
+def create_bullet(id, x, y, rotation, scale, owner, speed):
     game.create_entity(id)
     game.add_component(id, "transform", x, y, rotation, scale)
     game.add_component(id, "graphics", [(images[owner + "_bullet"], 0, 0)], game.get_component(id, "transform"))
-    game.add_component(id, "physics", velocity, game.get_component(id, "transform"))
+    game.add_component(id, "physics", speed, 1.0, game.get_component(id, "transform"))
 
-def create_player(id, x, y, rotation, scale, velocity):
+def create_player(id, x, y, rotation, scale, speed, accel, friction):
     game.create_entity(id)
     game.add_component(id, "transform", x, y, rotation, scale)
     game.add_component(id, "graphics", [(images["barrel"], 0, 0), (images["player_body"], 0, 0)], game.get_component(id, "transform"))
-    game.add_component(id, "physics", velocity, game.get_component(id, "transform"))
+    game.add_component(id, "physics", speed, accel, friction, game.get_component(id, "transform"))
     game.add_component(id, "controller", PlayerController(game, id, PLAYER_SPEED, PLAYER_ACCEL, game.get_component(id, "transform"), game.get_component(id, "physics")))
     game.add_component(id, "input handler", PlayerInputHandler(game, id, PLAYER_MOVE_KEYS))
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN])
 
     images.update(load_images())
-    create_player(game.last_id, 300, 300, 0, 1, Vector2(0, 0))
+    create_player(game.last_id, 300, 300, 0, 1, 200, 0.1, 0.05)
 
     while 1:
         '''elif event.type == MOUSEBUTTONDOWN:

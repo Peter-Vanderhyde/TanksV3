@@ -24,14 +24,59 @@ class Quit(Action):
 
 
 class MoveLeft(Action):
-    def __init__(self, id, max_vel, accel):
+    def __init__(self, id, move):
         super().__init__(id)
-        self.max_vel = max_vel
-        self.accel = accel
+        self.move = move
     
     def execute_action(self, game):
         physics = game.get_component(self.id, "physics")
-        physics.velocity = physics.velocity.lerp(self.max_vel, self.accel)
+        if self.move:
+            physics.velx = -1
+        else:
+            if physics.velx == -1:
+                physics.velx = 0
+
+
+class MoveRight(Action):
+    def __init__(self, id, move):
+        super().__init__(id)
+        self.move = move
+    
+    def execute_action(self, game):
+        physics = game.get_component(self.id, "physics")
+        if self.move:
+            physics.velx = 1
+        else:
+            if physics.velx == 1:
+                physics.velx = 0
+
+
+class MoveUp(Action):
+    def __init__(self, id, move):
+        super().__init__(id)
+        self.move = move
+    
+    def execute_action(self, game):
+        physics = game.get_component(self.id, "physics")
+        if self.move:
+            physics.vely = -1
+        else:
+            if physics.vely == -1:
+                physics.vely = 0
+
+
+class MoveDown(Action):
+    def __init__(self, id, move):
+        super().__init__(id)
+        self.move = move
+    
+    def execute_action(self, game):
+        physics = game.get_component(self.id, "physics")
+        if self.move:
+            physics.vely = 1
+        else:
+            if physics.vely == 1:
+                physics.vely = 0
 
 
 class ActionHandler:

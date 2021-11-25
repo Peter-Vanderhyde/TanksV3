@@ -20,9 +20,14 @@ class Transform(Component):
 
 
 class Physics(Component):
-    def __init__(self, game, id, velocity, transform_component):
+    def __init__(self, game, id, speed, accel, friction, transform_component):
         super().__init__(game, id)
-        self.velocity = velocity
+        self.speed = speed
+        self.accel = accel
+        self.friction = friction
+        self.velx = 0
+        self.vely = 0
+        self.velocity = Vector2(0, 0)
         self.transform_component = transform_component
 
 
@@ -51,8 +56,23 @@ class PlayerInputHandler(Component):
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 return Quit()
+            elif event.key == self.move_keys["left"]:
+                return MoveLeft(self.id, True)
+            elif event.key == self.move_keys["right"]:
+                return MoveRight(self.id, True)
+            elif event.key == self.move_keys["up"]:
+                return MoveUp(self.id, True)
+            elif event.key == self.move_keys["down"]:
+                return MoveDown(self.id, True)
+        elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return MoveLeft(self.id, Vector2(-1, 0) * 100, 0.1, self.game.get_component(self.id, "physics"))
+                return MoveLeft(self.id, False)
+            elif event.key == self.move_keys["right"]:
+                return MoveRight(self.id, False)
+            elif event.key == self.move_keys["up"]:
+                return MoveUp(self.id, False)
+            elif event.key == self.move_keys["down"]:
+                return MoveDown(self.id, False)
 
 
 class Controller(Component):
@@ -121,6 +141,13 @@ class PhysicsSystem(System):
     def update(self, dt):
         for component in self.components:
             if component is not None:
+                if (component.velx, component.vely) != (0, 0):
+                    target_vector = Vector2(component.velx, component.vely)
+                    target_vector.scale_to_length(component.speed)
+                    component.velocity = component.velocity.lerp(target_vector, component.accel - component.friction)
+                else:
+                    component.velocity = component.velocity.lerp(Vector2(0, 0), component.friction)
+
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
 
