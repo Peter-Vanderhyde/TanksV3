@@ -1,4 +1,5 @@
 import pygame
+import math
 from pygame.math import Vector2
 from pygame.locals import *
 from actions import *
@@ -37,7 +38,7 @@ class Graphics(Component):
         self.transform_component = transform_component
         # [(<name>, <offsetx>, <offsety>), (etc.)]
         self.images = images
-        self.last_rotation = 0
+        self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
 
 
@@ -162,8 +163,9 @@ class GraphicsSystem(System):
                 for index, element in enumerate(component.images):
                     image, offsetx, offsety = element
                     if component.transform_component.rotation != component.last_rotation:
-                        component.last_rotation = component.transform_component.rotation
                         ck = image.get_colorkey()
+                        width, height = image.get_size()
+                        image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale), math.ceil(height * component.transform_component.scale)))
                         image = pygame.transform.rotate(image, component.transform_component.rotation)
                         if ck:
                             image.set_colorkey(ck)
@@ -171,6 +173,7 @@ class GraphicsSystem(System):
                     width, height = component.last_used_images[index].get_size()
                     camera = component.game.camera
                     screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offsetx - camera.corner.x, component.transform_component.y - height // 2 + offsety - camera.corner.y))
+                component.last_rotation = component.transform_component.rotation
 
 
 class ControllerSystem(System):
