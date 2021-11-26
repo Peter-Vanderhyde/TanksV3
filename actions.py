@@ -30,12 +30,12 @@ class MoveLeft(Action):
         self.move = move
     
     def execute_action(self, game):
-        physics = game.get_component(self.id, "physics")
+        controller = game.get_component(self.id, "controller").controller_class
         if self.move:
-            physics.velx = -1
+            controller.velx = -1
         else:
-            if physics.velx == -1:
-                physics.velx = 0
+            if controller.velx == -1:
+                controller.velx = 0
 
 
 class MoveRight(Action):
@@ -44,12 +44,12 @@ class MoveRight(Action):
         self.move = move
     
     def execute_action(self, game):
-        physics = game.get_component(self.id, "physics")
+        controller = game.get_component(self.id, "controller").controller_class
         if self.move:
-            physics.velx = 1
+            controller.velx = 1
         else:
-            if physics.velx == 1:
-                physics.velx = 0
+            if controller.velx == 1:
+                controller.velx = 0
 
 
 class MoveUp(Action):
@@ -58,12 +58,12 @@ class MoveUp(Action):
         self.move = move
     
     def execute_action(self, game):
-        physics = game.get_component(self.id, "physics")
+        controller = game.get_component(self.id, "controller").controller_class
         if self.move:
-            physics.vely = -1
+            controller.vely = -1
         else:
-            if physics.vely == -1:
-                physics.vely = 0
+            if controller.vely == -1:
+                controller.vely = 0
 
 
 class MoveDown(Action):
@@ -72,21 +72,23 @@ class MoveDown(Action):
         self.move = move
     
     def execute_action(self, game):
-        physics = game.get_component(self.id, "physics")
+        controller = game.get_component(self.id, "controller").controller_class
         if self.move:
-            physics.vely = 1
+            controller.vely = 1
         else:
-            if physics.vely == 1:
-                physics.vely = 0
+            if controller.vely == 1:
+                controller.vely = 0
 
 
 class SpawnPlayer(Action):
-    def __init__(self, player_id, spawn_point, rotation, scale, speed, accel, friction):
+    def __init__(self, player_id, spawn_point, rotation, scale, max_speed, accel, friction):
         super().__init__(player_id)
         self.spawn_point = spawn_point
         self.rotation = rotation
         self.scale = scale
-        self.speed = speed
+        self.max_speed = max_speed
+        self.current_speed = 0
+        self.target_speed = 0
         self.accel = accel
         self.friction = friction
     
@@ -94,7 +96,7 @@ class SpawnPlayer(Action):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
-        game.add_component(self.id, "physics", self.rotation, self.speed, self.accel, self.friction, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, game.get_component(self.id, "transform")))
         game.add_component(self.id, "input handler", game.components.PlayerInputHandler(game, self.id, settings.PLAYER_MOVE_KEYS))
 
@@ -114,7 +116,7 @@ class Shoot(Action):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", [(game.images[self.owner_string + "_" + self.projectile_type], 0, 0)], game.get_component(self.id, "transform"))
-        game.add_component(self.id, "physics", self.angle, self.speed, 1, 0, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 0, game.get_component(self.id, "transform"))
 
 
 class FocusCamera(Action):
@@ -152,4 +154,4 @@ class ActionHandler:
     def handle_actions(self):
         for action in self.actions:
             action.execute(self.game)
-            self.actions.pop(0)
+        self.actions = []

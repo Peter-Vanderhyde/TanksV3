@@ -1,5 +1,6 @@
 import pygame
 import math
+import settings
 from pygame.math import Vector2
 from pygame.locals import *
 
@@ -20,15 +21,15 @@ class Transform(Component):
 
 
 class Physics(Component):
-    def __init__(self, game, id, angle, speed, accel, friction, transform_component):
+    def __init__(self, game, id, angle, speeds, accel, friction, transform_component):
         super().__init__(game, id)
-        self.speed = speed
+        self.max_speed, self.current_speed, self.target_speed = speeds
         self.accel = accel
         self.friction = friction
-        self.velx = 0
-        self.vely = 0
         self.velocity = Vector2()
-        self.velocity.from_polar((angle, 1))
+        self.velocity.from_polar((self.current_speed, angle))
+        self.target_velocity = Vector2()
+        self.target_velocity.from_polar((self.target_speed, angle))
         self.transform_component = transform_component
 
 
@@ -75,6 +76,12 @@ class PlayerInputHandler(Component):
                 return action.MoveUp(self.id, False)
             elif event.key == self.move_keys["down"]:
                 return action.MoveDown(self.id, False)
+        elif event.type == MOUSEBUTTONDOWN:
+            if event.button == 1:
+                id = self.game.last_id
+                self.game.last_id += 1
+                transform = self.game.get_component(self.id, "transform")
+                return action.Shoot(id, Vector2(transform.x, transform.y), 0, 1, transform.rotation, settings.PLAYER_MAX_SPEED, "bullet", "player")
 
 
 class Controller(Component):
@@ -87,12 +94,19 @@ class PlayerController(Component):
     def __init__(self, game, id, transform_component):
         super().__init__(game, id)
         self.transform_component = transform_component
+        self.velx = 0
+        self.vely = 0
     
     def update(self):
         transform = self.transform_component
         distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
         angle = distance_between.as_polar()[1]
-        transform.rotation = -angle
+        transform.rotation = angle
+
+        physics = self.game.get_component(self.id, "physics")
+        physics.target_velocity = Vector2(self.velx, self.vely)
+        if (self.velx, self.vely) != (0, 0):
+            physics.target_velocity.scale_to_length(physics.max_speed)
 
 
 class System:
@@ -140,12 +154,10 @@ class PhysicsSystem(System):
     def update(self, dt):
         for component in self.components:
             if component is not None:
-                if (component.velx, component.vely) != (0, 0):
-                    target_vector = Vector2(component.velx, component.vely)
-                    target_vector.scale_to_length(component.speed)
-                    component.velocity = component.velocity.lerp(target_vector, component.accel - component.friction)
+                if component.target_velocity == Vector2(0, 0):
+                    component.velocity = component.velocity.lerp(component.target_velocity, component.friction)
                 else:
-                    component.velocity = component.velocity.lerp(Vector2(0, 0), component.friction)
+                    component.velocity = component.velocity.lerp(component.target_velocity, component.accel - component.friction)
 
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
@@ -164,7 +176,7 @@ class GraphicsSystem(System):
                         ck = image.get_colorkey()
                         width, height = image.get_size()
                         image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale), math.ceil(height * component.transform_component.scale)))
-                        image = pygame.transform.rotate(image, component.transform_component.rotation)
+                        image = pygame.transform.rotate(image, -component.transform_component.rotation)
                         if ck:
                             image.set_colorkey(ck)
                         component.last_used_images[index] = image
