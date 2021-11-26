@@ -52,7 +52,6 @@ class Game:
         component_indexes = [-1] * len(components.system_index)
         # Each entity is just this list of component indexes associated with an id key
         self.entities[entity_id] = component_indexes
-        self.last_id += 1
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
         index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
@@ -130,18 +129,21 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode(settings.SCREEN_SIZE)
 
     game = Game(screen)
-    pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN])
+    pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
     game.update_images(load_images())
     id = game.last_id
-    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
+    game.last_id += 1
 
     while 1:
         current_time = time.time()
         frame_time = current_time - game.last_time
         game.last_time = current_time
         game.accumulator += frame_time
+
+        game.action_handler.handle_actions()
 
         while game.accumulator >= game.dt:
             components.physics_sys.update(game.dt)
@@ -150,7 +152,6 @@ if __name__ == "__main__":
         
         game.action_handler.get_player_input()
         components.controller_sys.update()
-        game.action_handler.handle_actions()
         
         screen.fill(colors.white)
         game.camera.draw_grid()

@@ -9,7 +9,7 @@ IMAGE_PATH = "Images/"
 ASSETS = (("barrel", True, white), ("enemy_body", True), ("enemy_bullet", True), ("player_body", True), ("player_bullet", True))
 
 # Settings
-PLAYER_SPEED = 300
+PLAYER_MAX_SPEED = 300
 PLAYER_ACCEL = 0.1
 PLAYER_FRICTION = 0.05
 PLAYER_MOVE_KEYS = {
