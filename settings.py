@@ -6,7 +6,7 @@ monitor = pygame.display.Info()
 SCREEN_SIZE = (monitor.current_w - 50, monitor.current_h - 75)
 IMAGE_PATH = "Images/"
 # [<name>, <alpha>, <colorkey>]
-ASSETS = (("player_body", True), ("player_bullet", True), ("barrel", True, white))
+ASSETS = (("barrel", True, white), ("enemy_body", True), ("enemy_bullet", True), ("player_body", True), ("player_bullet", True))
 
 # Settings
 PLAYER_SPEED = 300
