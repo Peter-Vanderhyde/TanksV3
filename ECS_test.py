@@ -2,29 +2,27 @@ import pygame
 import sys
 import random
 import time
-from components import *
-from colors import *
-from settings import *
-from actions import *
+import components
+import actions
+import colors
+import settings
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
 
 
-images = {}
-
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
-        image = pygame.image.load(IMAGE_PATH + name + ".png").convert_alpha()
+        image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert_alpha()
         if colorkey != ():
             image.set_colorkey(colorkey)
     else:
-        image = pygame.image.load(IMAGE_PATH + name + ".png").convert()
+        image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert()
     return image
 
 def load_images():
     d = {}
-    for asset in ASSETS:
+    for asset in settings.ASSETS:
         image = load_image(*asset)
         d.update({asset[0]:image})
     
@@ -34,6 +32,9 @@ def load_images():
 class Game:
     def __init__(self, screen):
         self.screen = screen
+        self.components = components
+        self.actions = actions
+        self.images = {}
 
         self.dt = 0.01
         self.last_time = time.time()
@@ -43,35 +44,41 @@ class Game:
         self.living_entities = 0
         self.last_id = 0
 
-        self.action_handler = ActionHandler(self, input_handler_sys)
+        self.action_handler = actions.ActionHandler(self, components.input_handler_sys)
         self.camera = Camera(self)
     
     def create_entity(self, entity_id):
         # Create [-1, -1, -1, etc] because we don't know what components it will have
-        component_indexes = [-1] * len(system_index)
+        component_indexes = [-1] * len(components.system_index)
         # Each entity is just this list of component indexes associated with an id key
         self.entities[entity_id] = component_indexes
         self.last_id += 1
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
-        index = systems[component_name].add_component(self, entity_id, *args, **kwargs)
-        self.entities[entity_id][component_index[component_name]] = index
+        index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
+        self.entities[entity_id][components.component_index[component_name]] = index
     
     def destroy_entity(self, entity_id):
         try:
             for i, index in enumerate(self.entities[entity_id]):
                 if index != -1:
-                    system_index[i].remove_component(index)
+                    components.system_index[i].remove_component(index)
             self.entities.pop(entity_id)
         except:
             pass
 
     def get_component(self, entity_id, component_name):
         try:
-            component = systems[component_name].components[self.entities[entity_id][component_index[component_name]]]
+            component = components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
             return component
         except KeyError:
             raise KeyError("Tried to get component that does not exist.")
+    
+    def add_action(self, action):
+        self.action_handler.add_action(action)
+    
+    def update_images(self, new_images_dict):
+        self.images.update(new_images_dict)
 
 
 class Camera:
@@ -106,67 +113,46 @@ class Camera:
     def draw_grid(self):
         # Draw grid lines
         game = self.game
-        grid_box_w, grid_box_h = (GRID_SIZE, GRID_SIZE)
+        grid_box_w, grid_box_h = (settings.GRID_SIZE, settings.GRID_SIZE)
 
         left_buffer = -self.corner.x % grid_box_w
         for x in range(round(self.width // grid_box_w) + 1):
             x_pos = left_buffer + x * grid_box_w
-            pygame.draw.line(game.screen, light_gray, (x_pos, 0), (x_pos, self.height))
+            pygame.draw.line(game.screen, colors.light_gray, (x_pos, 0), (x_pos, self.height))
 
         top_buffer = -self.corner.y % grid_box_h
         for y in range(round(self.height // grid_box_h) + 1):
             y_pos = top_buffer + y * grid_box_h
-            pygame.draw.line(game.screen, light_gray, (0, y_pos), (self.width, y_pos))
-
-
-def create_bullet(id, x, y, rotation, scale, owner, velocity, speed):
-    game.create_entity(id)
-    game.add_component(id, "transform", x, y, rotation, scale)
-    game.add_component(id, "graphics", [(images[owner + "_bullet"], 0, 0)], game.get_component(id, "transform"))
-    game.add_component(id, "physics", velocity, speed, 0.1, 0.05, game.get_component(id, "transform"))
-
-def create_player(id, x, y, rotation, scale, speed, accel, friction):
-    game.create_entity(id)
-    game.add_component(id, "transform", x, y, rotation, scale)
-    game.add_component(id, "graphics", [(images["barrel"], 0, 0), (images["player_body"], 0, 0)], game.get_component(id, "transform"))
-    game.add_component(id, "physics", Vector2(0, 0), speed, accel, friction, game.get_component(id, "transform"))
-    game.add_component(id, "controller", PlayerController(game, id, PLAYER_SPEED, PLAYER_ACCEL, game.get_component(id, "transform"), game.get_component(id, "physics")))
-    game.add_component(id, "input handler", PlayerInputHandler(game, id, PLAYER_MOVE_KEYS))
+            pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
 if __name__ == "__main__":
-    screen = pygame.display.set_mode(SCREEN_SIZE)
+    screen = pygame.display.set_mode(settings.SCREEN_SIZE)
 
     game = Game(screen)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN])
 
-    images.update(load_images())
+    game.update_images(load_images())
     id = game.last_id
-    create_player(id, 300, 300, 0, 1, PLAYER_SPEED, PLAYER_ACCEL, PLAYER_FRICTION)
-    game.camera.set_target(id, True)
+    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.FocusCamera(id, True))
 
     while 1:
-        '''elif event.type == MOUSEBUTTONDOWN:
-            id = game.last_id
-            velocity = Vector2(1, 0).rotate_ip(random.randrange(0, 360))
-            speed = random.randint(5, 200)
-            create_bullet(id, 300, 300, 0, 1, "player", velocity * speed)'''
-
         current_time = time.time()
         frame_time = current_time - game.last_time
         game.last_time = current_time
         game.accumulator += frame_time
 
         while game.accumulator >= game.dt:
-            physics_sys.update(game.dt)
+            components.physics_sys.update(game.dt)
             game.camera.update()
             game.accumulator -= game.dt
         
         game.action_handler.get_player_input()
+        components.controller_sys.update()
         game.action_handler.handle_actions()
-        controller_sys.update()
         
-        screen.fill(white)
+        screen.fill(colors.white)
         game.camera.draw_grid()
-        graphics_sys.update(screen)
+        components.graphics_sys.update(screen)
         pygame.display.update()

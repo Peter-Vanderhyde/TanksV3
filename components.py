@@ -2,7 +2,6 @@ import pygame
 import math
 from pygame.math import Vector2
 from pygame.locals import *
-from actions import *
 
 
 class Component:
@@ -21,14 +20,15 @@ class Transform(Component):
 
 
 class Physics(Component):
-    def __init__(self, game, id, velocity, speed, accel, friction, transform_component):
+    def __init__(self, game, id, angle, speed, accel, friction, transform_component):
         super().__init__(game, id)
         self.speed = speed
         self.accel = accel
         self.friction = friction
         self.velx = 0
         self.vely = 0
-        self.velocity = velocity
+        self.velocity = Vector2()
+        self.velocity.from_polar((angle, 1))
         self.transform_component = transform_component
 
 
@@ -54,26 +54,27 @@ class PlayerInputHandler(Component):
         self.move_keys = move_keys
     
     def get_action(self, event):
+        action = self.game.actions
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
-                return Quit()
+                return action.Quit()
             elif event.key == self.move_keys["left"]:
-                return MoveLeft(self.id, True)
+                return action.MoveLeft(self.id, True)
             elif event.key == self.move_keys["right"]:
-                return MoveRight(self.id, True)
+                return action.MoveRight(self.id, True)
             elif event.key == self.move_keys["up"]:
-                return MoveUp(self.id, True)
+                return action.MoveUp(self.id, True)
             elif event.key == self.move_keys["down"]:
-                return MoveDown(self.id, True)
+                return action.MoveDown(self.id, True)
         elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return MoveLeft(self.id, False)
+                return action.MoveLeft(self.id, False)
             elif event.key == self.move_keys["right"]:
-                return MoveRight(self.id, False)
+                return action.MoveRight(self.id, False)
             elif event.key == self.move_keys["up"]:
-                return MoveUp(self.id, False)
+                return action.MoveUp(self.id, False)
             elif event.key == self.move_keys["down"]:
-                return MoveDown(self.id, False)
+                return action.MoveDown(self.id, False)
 
 
 class Controller(Component):
@@ -83,12 +84,9 @@ class Controller(Component):
 
 
 class PlayerController(Component):
-    def __init__(self, game, id, max_velocity, acceleration, transform_component, physics_component):
+    def __init__(self, game, id, transform_component):
         super().__init__(game, id)
-        self.max_velocity = max_velocity
-        self.acceleration = acceleration
         self.transform_component = transform_component
-        self.physics_component = physics_component
     
     def update(self):
         transform = self.transform_component
@@ -190,13 +188,13 @@ class InputHandlerSystem(System):
     def __init__(self):
         super().__init__(InputHandler)
     
-    def create_player_action(self, event, handler):
+    def create_player_action(self, event):
         for component in self.components:
             if component is not None:
                 if isinstance(component.input_class, PlayerInputHandler):
                     action = component.input_class.get_action(event)
                     if action is not None:
-                        handler.add_action(action)
+                        component.game.add_action(action)
     
     def update(self):
         for component in self.components:
