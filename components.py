@@ -20,14 +20,14 @@ class Transform(Component):
 
 
 class Physics(Component):
-    def __init__(self, game, id, speed, accel, friction, transform_component):
+    def __init__(self, game, id, velocity, speed, accel, friction, transform_component):
         super().__init__(game, id)
         self.speed = speed
         self.accel = accel
         self.friction = friction
         self.velx = 0
         self.vely = 0
-        self.velocity = Vector2(0, 0)
+        self.velocity = velocity
         self.transform_component = transform_component
 
 
@@ -91,7 +91,7 @@ class PlayerController(Component):
     
     def update(self):
         transform = self.transform_component
-        distance_between = pygame.mouse.get_pos() - Vector2(transform.x, transform.y)
+        distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
         angle = distance_between.as_polar()[1]
         transform.rotation = -angle
 
@@ -169,7 +169,8 @@ class GraphicsSystem(System):
                             image.set_colorkey(ck)
                         component.last_used_images[index] = image
                     width, height = component.last_used_images[index].get_size()
-                    screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offsetx, component.transform_component.y - height // 2 + offsety))
+                    camera = component.game.camera
+                    screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offsetx - camera.corner.x, component.transform_component.y - height // 2 + offsety - camera.corner.y))
 
 
 class ControllerSystem(System):
