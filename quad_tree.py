@@ -58,26 +58,22 @@ class N_Quad_Tree:
                     if self.tlt == None:
                         self.tlt = N_Quad_Tree(Vector2(self.tl.x, self.tl.y), Vector2(self.center.x+1, self.center.y+1), n, self)
                         return
-                    self.tlt.leaves += 1
                     return self.tlt.insert(n)
                 else:
                     if self.blt == None:
                         self.blt = N_Quad_Tree(Vector2(self.tl.x, self.center.y), Vector2(self.center.x+1, self.br.y), n, self)
                         return
-                    self.blt.leaves += 1
                     return self.blt.insert(n)
             else:
                 if n.pos.y <= self.center.y:
                     if self.trt == None:
                         self.trt = N_Quad_Tree(Vector2(self.center.x, self.tl.y), Vector2(self.br.x, self.center.y+1), n)
                         return
-                    self.trt.leaves += 1
                     return self.trt.insert(n)
                 else:
                     if self.brt == None:
                         self.brt = N_Quad_Tree(Vector2(self.center.x, self.center.y), Vector2(self.br.x, self.br.y), n)
                         return
-                    self.brt.leaves += 1
                     return self.brt.insert(n)
         else:
             return
@@ -117,7 +113,7 @@ if __name__ == "__main__":
                 else:
                     kind = "border"
         
-        if time.time() - last_time >= 0.1:
+        if time.time() - last_time >= 0.0001:
             node = Node(Vector2(random.randint(0, tree_border[0]), random.randint(0, tree_border[1])), id_on)
             id_on += 1
             root.insert(node)
