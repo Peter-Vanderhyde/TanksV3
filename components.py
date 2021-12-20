@@ -6,14 +6,19 @@ from pygame.locals import *
 
 
 class Component:
-    def __init__(self, game, id):
+    def __init__(self, game, next_available):
         self.game = game
-        self.id = id
+        self.next_available = next_available
+        self.id = None
+    def activate(self):
+        pass
 
 
 class Transform(Component):
-    def __init__(self, game, id, x, y, rotation, scale):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, x, y, rotation, scale):
+        self.id = id
         self.x = x
         self.y = y
         self.rotation = rotation
@@ -21,8 +26,10 @@ class Transform(Component):
 
 
 class Physics(Component):
-    def __init__(self, game, id, angle, speeds, accel, friction, transform_component):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, angle, speeds, accel, friction, transform_component):
+        self.id = id
         self.max_speed, self.current_speed, self.target_speed = speeds
         self.accel = accel
         self.friction = friction
@@ -34,24 +41,30 @@ class Physics(Component):
 
 
 class Graphics(Component):
-    def __init__(self, game, id, images, transform_component):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, images, transform_component):
+        self.id = id
         self.transform_component = transform_component
-        # [(<name>, <offsetx>, <offsety>), (etc.)]
+        # images = [(<name>, <offsetx>, <offsety>), (etc.)]
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
 
 
 class InputHandler(Component):
-    def __init__(self, game, id, input_class):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, input_class):
+        self.id = id
         self.input_class = input_class
 
 
 class PlayerInputHandler(Component):
-    def __init__(self, game, id, move_keys):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, move_keys):
+        self.id = id
         self.move_keys = move_keys
     
     def get_action(self, event):
@@ -85,14 +98,18 @@ class PlayerInputHandler(Component):
 
 
 class Controller(Component):
-    def __init__(self, game, id, controller_class):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, controller_class):
+        self.id = id
         self.controller_class = controller_class
 
 
 class PlayerController(Component):
-    def __init__(self, game, id, transform_component):
-        super().__init__(game, id)
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, transform_component):
+        self.id = id
         self.transform_component = transform_component
         self.velx = 0
         self.vely = 0
@@ -112,8 +129,8 @@ class PlayerController(Component):
 class System:
     def __init__(self, component_type):
         self.component_type = component_type
-        self.components = [None]
-        self.first_available = 0
+        self.components = []
+        self.first_available = None
     
     def set_next_available(self):
         for index, component in enumerate(self.components[self.first_available:], self.first_available):
@@ -124,19 +141,34 @@ class System:
         self.components.append(None)
     
     def add_component(self, game, *args, **kwargs):
+        if self.first_available is None:
+            self.partition(game, 5)
         index = self.first_available
-        self.components[index] = self.component_type(game, *args, **kwargs)
-        self.set_next_available()
+        self.components[index].activate(*args, **kwargs)
+        self.first_available = self.components[index].next_available
         return index
     
     def remove_component(self, index):
         try:
-            self.components[index] = None
+            self.components[index].id = None
+            self.components[index].next_available = self.first_available
+            self.first_available = index
         except:
             raise Exception("Unable to remove component.")
-        
-        if index < self.first_available:
-            self.first_available = index
+    
+    def partition(self, game, amount):
+        print(self.component_type)
+        link = None
+        new_comps = []
+        for i in range(amount):
+            comp = self.component_type(game, link)
+            new_comps.insert(0, comp)
+            if link is None:
+                link = len(self.components) + amount - 1
+            else:
+                link -= 1
+        self.first_available = len(self.components)
+        self.components += new_comps
     
     def update(self):
         pass
