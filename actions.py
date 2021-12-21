@@ -95,7 +95,7 @@ class SpawnPlayer(Action):
     def execute_action(self, game):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.id, "graphics", [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "graphics", 1, [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
 
@@ -114,7 +114,7 @@ class Shoot(Action):
     def execute_action(self, game):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.id, "graphics", [(game.images[self.owner_string + "_" + self.projectile_type], 0, 0)], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_" + self.projectile_type], 0, 0)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 0, game.get_component(self.id, "transform"))
 
 

@@ -43,8 +43,9 @@ class Physics(Component):
 class Graphics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
-    def activate(self, id, images, transform_component):
+    def activate(self, id, layer, images, transform_component):
         self.id = id
+        self.layer = layer
         self.transform_component = transform_component
         # images = [(<name>, <offsetx>, <offsety>), (etc.)]
         self.images = images
@@ -116,14 +117,6 @@ class System:
         self.components = []
         self.first_available = None
     
-    def set_next_available(self):
-        for index, component in enumerate(self.components[self.first_available:], self.first_available):
-            if component == None:
-                self.first_available = index
-                return
-        self.first_available = len(self.components)
-        self.components.append(None)
-    
     def add_component(self, game, *args, **kwargs):
         if self.first_available is None:
             self.partition(game, 10)
@@ -182,24 +175,55 @@ class PhysicsSystem(System):
 class GraphicsSystem(System):
     def __init__(self):
         super().__init__(Graphics)
+        self.layer_indexes = []
+        self.layers = 0
+    
+    def check_layer_exists(self, layer):
+        """Instead of hardcoding the number of graphics layers that I will use, I let it create a new
+        layer whenever a higher one is needed"""
+        while self.layers < layer + 1:
+            self.layer_indexes.append([])
+            self.layers += 1
+    
+    def add_component(self, game, *args, **kwargs):
+        layer = args[1]
+        self.check_layer_exists(layer)
+        if self.first_available is None:
+            self.partition(game, 10)
+        index = self.first_available
+        self.components[index].activate(*args, **kwargs)
+        self.first_available = self.components[index].next_available
+        self.layer_indexes[layer].append(index)
+        return index
+    
+    def remove_component(self, index):
+        try:
+            self.components[index].id = None
+            self.components[index].next_available = self.first_available
+            self.layer_indexes[self.components[index].layer].remove(index)
+            self.first_available = index
+        except:
+            raise Exception("Unable to remove component.")
     
     def update(self, screen):
-        for component in self.components:
-            if component.id is not None:
-                for index, element in enumerate(component.images):
-                    image, offsetx, offsety = element
-                    if component.transform_component.rotation != component.last_rotation:
-                        ck = image.get_colorkey()
-                        width, height = image.get_size()
-                        image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale), math.ceil(height * component.transform_component.scale)))
-                        image = pygame.transform.rotate(image, -component.transform_component.rotation)
-                        if ck:
-                            image.set_colorkey(ck)
-                        component.last_used_images[index] = image
-                    width, height = component.last_used_images[index].get_size()
-                    camera = component.game.camera
-                    screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offsetx - camera.corner.x, component.transform_component.y - height // 2 + offsety - camera.corner.y))
-                component.last_rotation = component.transform_component.rotation
+        for layer in self.layer_indexes:
+            for component_index in layer:
+                component = self.components[component_index]
+                if component.id is not None:
+                    for index, element in enumerate(component.images):
+                        image, offsetx, offsety = element
+                        if component.transform_component.rotation != component.last_rotation:
+                            ck = image.get_colorkey()
+                            width, height = image.get_size()
+                            image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale), math.ceil(height * component.transform_component.scale)))
+                            image = pygame.transform.rotate(image, -component.transform_component.rotation)
+                            if ck:
+                                image.set_colorkey(ck)
+                            component.last_used_images[index] = image
+                        width, height = component.last_used_images[index].get_size()
+                        camera = component.game.camera
+                        screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offsetx - camera.corner.x, component.transform_component.y - height // 2 + offsety - camera.corner.y))
+                    component.last_rotation = component.transform_component.rotation
 
 
 class ControllerSystem(System):
