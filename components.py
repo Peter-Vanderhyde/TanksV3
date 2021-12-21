@@ -52,20 +52,33 @@ class Graphics(Component):
         self.last_used_images = [element[0] for element in self.images]
 
 
-class InputHandler(Component):
+class Controller(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
-    def activate(self, id, input_class):
+    def activate(self, id, controller_class):
         self.id = id
-        self.input_class = input_class
+        self.controller_class = controller_class
 
 
-class PlayerInputHandler(Component):
-    def __init__(self, game, next_available):
-        super().__init__(game, next_available)
-    def activate(self, id, move_keys):
+class PlayerController:
+    def __init__(self, game, id, move_keys, transform_component):
+        self.game = game
         self.id = id
         self.move_keys = move_keys
+        self.transform_component = transform_component
+        self.velx = 0
+        self.vely = 0
+    
+    def update(self):
+        transform = self.transform_component
+        distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
+        angle = distance_between.as_polar()[1]
+        transform.rotation = angle
+
+        physics = self.game.get_component(self.id, "physics")
+        physics.target_velocity = Vector2(self.velx, self.vely)
+        if (self.velx, self.vely) != (0, 0):
+            physics.target_velocity.scale_to_length(physics.max_speed)
     
     def get_action(self, event):
         action = self.game.actions
@@ -97,35 +110,6 @@ class PlayerInputHandler(Component):
                 return action.Shoot(id, Vector2(transform.x, transform.y), 0, 1, transform.rotation, settings.PLAYER_MAX_SPEED, "bullet", "player")
 
 
-class Controller(Component):
-    def __init__(self, game, next_available):
-        super().__init__(game, next_available)
-    def activate(self, id, controller_class):
-        self.id = id
-        self.controller_class = controller_class
-
-
-class PlayerController(Component):
-    def __init__(self, game, next_available):
-        super().__init__(game, next_available)
-    def activate(self, id, transform_component):
-        self.id = id
-        self.transform_component = transform_component
-        self.velx = 0
-        self.vely = 0
-    
-    def update(self):
-        transform = self.transform_component
-        distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
-        angle = distance_between.as_polar()[1]
-        transform.rotation = angle
-
-        physics = self.game.get_component(self.id, "physics")
-        physics.target_velocity = Vector2(self.velx, self.vely)
-        if (self.velx, self.vely) != (0, 0):
-            physics.target_velocity.scale_to_length(physics.max_speed)
-
-
 class System:
     def __init__(self, component_type):
         self.component_type = component_type
@@ -142,7 +126,7 @@ class System:
     
     def add_component(self, game, *args, **kwargs):
         if self.first_available is None:
-            self.partition(game, 5)
+            self.partition(game, 10)
         index = self.first_available
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
@@ -185,7 +169,7 @@ class PhysicsSystem(System):
     
     def update(self, dt):
         for component in self.components:
-            if component is not None:
+            if component.id is not None:
                 if component.target_velocity == Vector2(0, 0):
                     component.velocity = component.velocity.lerp(component.target_velocity, component.friction)
                 else:
@@ -201,7 +185,7 @@ class GraphicsSystem(System):
     
     def update(self, screen):
         for component in self.components:
-            if component is not None:
+            if component.id is not None:
                 for index, element in enumerate(component.images):
                     image, offsetx, offsety = element
                     if component.transform_component.rotation != component.last_rotation:
@@ -224,46 +208,32 @@ class ControllerSystem(System):
 
     def update(self):
         for component in self.components:
-            if component is not None:
+            if component.id is not None:
                 component.controller_class.update()
-
-
-class InputHandlerSystem(System):
-    def __init__(self):
-        super().__init__(InputHandler)
     
-    def create_player_action(self, event):
+    def get_action_from_event(self, event):
         for component in self.components:
-            if component is not None:
-                if isinstance(component.input_class, PlayerInputHandler):
-                    action = component.input_class.get_action(event)
-                    if action is not None:
-                        component.game.add_action(action)
-    
-    def update(self):
-        for component in self.components:
-            if component is not None:
-                component.event_class.update()
+            if component.id is not None:
+                action = component.controller_class.get_action(event)
+                if action is not None:
+                    component.game.add_action(action)
 
 
 transform_sys = TransformSystem()
 physics_sys = PhysicsSystem()
 graphics_sys = GraphicsSystem()
 controller_sys = ControllerSystem()
-input_handler_sys = InputHandlerSystem()
 
 systems = {
     "transform":transform_sys,
     "physics":physics_sys,
     "graphics":graphics_sys,
-    "controller":controller_sys,
-    "input handler":input_handler_sys
+    "controller":controller_sys
 }
 component_index = {
     "transform":0,
     "physics":1,
     "graphics":2,
-    "controller":3,
-    "input handler":4
+    "controller":3
 }
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, input_handler_sys]
+system_index = [transform_sys, physics_sys, graphics_sys, controller_sys]

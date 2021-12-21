@@ -97,8 +97,7 @@ class SpawnPlayer(Action):
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.friction, game.get_component(self.id, "transform"))
-        game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, game.get_component(self.id, "transform")))
-        game.add_component(self.id, "input handler", game.components.PlayerInputHandler(game, self.id, settings.PLAYER_MOVE_KEYS))
+        game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
 
 
 class Shoot(Action):
@@ -138,15 +137,15 @@ class PositionCamera(Action):
 
 
 class ActionHandler:
-    def __init__(self, game, input_sys, actions=[]):
+    def __init__(self, game, controller_sys, actions=[]):
         self.game = game
-        self.input_sys = input_sys
+        self.controller_sys = controller_sys
         self.actions = actions
     
     def get_player_input(self):
         events = pygame.event.get()
         for event in events:
-            self.input_sys.create_player_action(event)
+            self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
         self.actions.append(action)

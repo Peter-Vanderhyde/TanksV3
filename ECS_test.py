@@ -44,7 +44,7 @@ class Game:
         self.living_entities = 0
         self.last_id = 0
 
-        self.action_handler = actions.ActionHandler(self, components.input_handler_sys)
+        self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
     
     def create_entity(self, entity_id):
