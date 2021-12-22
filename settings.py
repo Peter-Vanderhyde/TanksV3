@@ -19,4 +19,7 @@ PLAYER_MOVE_KEYS = {
     "down":K_s
 }
 
+BARREL_LENGTH = 40
+BARREL_WIDTH = 20
+
 GRID_SIZE = 100

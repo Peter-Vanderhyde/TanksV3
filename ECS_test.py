@@ -18,6 +18,7 @@ def load_image(name, alpha=True, colorkey=()):
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert()
     return image
 
+
 def load_images():
     d = {}
     for asset in settings.ASSETS:

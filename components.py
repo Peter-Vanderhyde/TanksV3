@@ -133,7 +133,6 @@ class System:
             raise Exception("Unable to remove component.")
     
     def partition(self, game, amount):
-        print(self.component_type)
         link = None
         new_comps = []
         for i in range(amount):
@@ -150,12 +149,12 @@ class System:
         pass
 
 
-class TransformSystem(System):
+class Transform_System(System):
     def __init__(self):
         super().__init__(Transform)
 
 
-class PhysicsSystem(System):
+class Physics_System(System):
     def __init__(self):
         super().__init__(Physics)
     
@@ -171,7 +170,7 @@ class PhysicsSystem(System):
                 component.transform_component.y += component.velocity.y * dt
 
 
-class GraphicsSystem(System):
+class Graphics_System(System):
     def __init__(self):
         super().__init__(Graphics)
         self.layer_indexes = []
@@ -225,7 +224,7 @@ class GraphicsSystem(System):
                     component.last_rotation = component.transform_component.rotation
 
 
-class ControllerSystem(System):
+class Controller_System(System):
     def __init__(self):
         super().__init__(Controller)
 
@@ -242,10 +241,10 @@ class ControllerSystem(System):
                     component.game.add_action(action)
 
 
-transform_sys = TransformSystem()
-physics_sys = PhysicsSystem()
-graphics_sys = GraphicsSystem()
-controller_sys = ControllerSystem()
+transform_sys = Transform_System()
+physics_sys = Physics_System()
+graphics_sys = Graphics_System()
+controller_sys = Controller_System()
 
 systems = {
     "transform":transform_sys,
