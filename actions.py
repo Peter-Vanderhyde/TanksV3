@@ -98,24 +98,42 @@ class SpawnPlayer(Action):
         game.add_component(self.id, "graphics", 1, [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
+        game.add_component(self.id, "barrel manager", [[self.scale, 0.0, 0, 0.01, 0]], False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
 
 
-class Shoot(Action):
-    def __init__(self, bullet_id, spawn_point, rotation, scale, angle, speed, projectile_type, owner_string):
+class Spawn_Bullet(Action):
+    def __init__(self, bullet_id, spawn_point, rotation, scale, angle, speed, owner_string):
         super().__init__(bullet_id)
         self.spawn_point = spawn_point
         self.rotation = rotation
         self.scale = scale
         self.angle = angle
         self.speed = speed
-        self.projectile_type = projectile_type
         self.owner_string = owner_string
     
     def execute_action(self, game):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_" + self.projectile_type], 0, 0)], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_bullet"], 0, 0)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 0, game.get_component(self.id, "transform"))
+
+
+class Start_Firing_Barrels(Action):
+    def __init__(self, id):
+        super().__init__(id)
+    
+    def execute_action(self, game):
+        manager = game.get_component(self.id, "barrel manager")
+        manager.shooting = True
+
+
+class Stop_Firing_Barrels(Action):
+    def __init__(self, id):
+        super().__init__(id)
+    
+    def execute_action(self, game):
+        manager = game.get_component(self.id, "barrel manager")
+        manager.shooting = False
 
 
 class FocusCamera(Action):

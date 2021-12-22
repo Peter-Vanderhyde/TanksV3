@@ -1,5 +1,6 @@
 import pygame
 import math
+import time
 import settings
 from pygame.math import Vector2
 from pygame.locals import *
@@ -30,13 +31,13 @@ class Physics(Component):
         super().__init__(game, next_available)
     def activate(self, id, angle, speeds, accel, friction, transform_component):
         self.id = id
-        self.max_speed, self.current_speed, self.target_speed = speeds
+        self.max_speed, current_speed, target_speed = speeds
         self.accel = accel
         self.friction = friction
         self.velocity = Vector2()
-        self.velocity.from_polar((self.current_speed, angle))
+        self.velocity.from_polar((current_speed, angle))
         self.target_velocity = Vector2()
-        self.target_velocity.from_polar((self.target_speed, angle))
+        self.target_velocity.from_polar((target_speed, angle))
         self.transform_component = transform_component
 
 
@@ -105,9 +106,23 @@ class PlayerController:
                 return action.MoveDown(self.id, False)
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                id = self.game.get_unique_id()
-                transform = self.game.get_component(self.id, "transform")
-                return action.Shoot(id, Vector2(transform.x, transform.y), 0, 1, transform.rotation, settings.PLAYER_MAX_SPEED, "bullet", "player")
+                return action.Start_Firing_Barrels(self.id)
+        elif event.type == MOUSEBUTTONUP:
+            if event.button == 1:
+                return action.Stop_Firing_Barrels(self.id)
+
+
+class Barrel_Manager(Component):
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, barrels, shooting, graphics_component, transform_component):
+        self.id = id
+        # barrels = [[scale, angle_offset, last_shot, cooldown, image_index], [<next barrel>]]
+        # NOTE: reference each barrel in the order that they should be drawn
+        self.barrels = barrels
+        self.shooting = shooting
+        self.graphics_component = graphics_component
+        self.transform_component = transform_component
 
 
 class System:
@@ -207,7 +222,7 @@ class Graphics_System(System):
         for layer in self.layer_indexes:
             for component_index in layer:
                 component = self.components[component_index]
-                if component.id is not None:
+                if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
                     for index, element in enumerate(component.images):
                         image, offsetx, offsety = element
                         if component.transform_component.rotation != component.last_rotation:
@@ -241,21 +256,46 @@ class Controller_System(System):
                     component.game.add_action(action)
 
 
+class Barrel_Manager_System(System):
+    def __init__(self):
+        super().__init__(Barrel_Manager)
+    
+    def update(self):
+        for component in self.components:
+            if component.id is not None:
+                # update barrel animations?
+                if component.shooting:
+                    for barrel in component.barrels:
+                        scale, angle_offset, last_shot, cooldown, image_index = barrel
+                        if time.time() - last_shot >= cooldown:
+                            barrel[2] = time.time()
+                            barrel_length = settings.BARREL_LENGTH * scale
+                            barrel_angle = component.transform_component.rotation + angle_offset
+                            barrel_end = Vector2()
+                            barrel_end.from_polar((barrel_length, barrel_angle))
+                            firing_point = Vector2(component.transform_component.x, component.transform_component.y) + barrel_end
+                            id = component.game.get_unique_id() #                  id, spawn_point, rotation, scale, angle, speed, type, owner
+                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, 0, scale, barrel_angle, settings.PLAYER_MAX_SPEED, "player"))
+
+
 transform_sys = Transform_System()
 physics_sys = Physics_System()
 graphics_sys = Graphics_System()
 controller_sys = Controller_System()
+barrel_manager_sys = Barrel_Manager_System()
 
 systems = {
     "transform":transform_sys,
     "physics":physics_sys,
     "graphics":graphics_sys,
-    "controller":controller_sys
+    "controller":controller_sys,
+    "barrel manager":barrel_manager_sys
 }
 component_index = {
     "transform":0,
     "physics":1,
     "graphics":2,
-    "controller":3
+    "controller":3,
+    "barrel manager":4
 }
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys]
+system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys]

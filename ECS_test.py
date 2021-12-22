@@ -48,13 +48,14 @@ class Game:
     
     def get_unique_id(self):
         self.last_id += 1
-        return self.last_id
+        return self.last_id - 1
     
     def create_entity(self, entity_id):
         # Create [-1, -1, -1, etc] because we don't know what components it will have
         component_indexes = [-1] * len(components.system_index)
         # Each entity is just this list of component indexes associated with an id key
         self.entities[entity_id] = component_indexes
+        self.living_entities += 1
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
         index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
@@ -67,6 +68,7 @@ class Game:
                 if index != -1:
                     components.system_index[i].remove_component(index)
             self.entities.pop(entity_id)
+            self.living_entities -= 1
         except:
             pass
 
@@ -130,7 +132,8 @@ class Camera:
 
 
 if __name__ == "__main__":
-    screen = pygame.display.set_mode(settings.SCREEN_SIZE)
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
     game = Game(screen)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
@@ -146,6 +149,10 @@ if __name__ == "__main__":
         game.last_time = current_time
         game.accumulator += frame_time
 
+        game.action_handler.get_player_input()
+        components.controller_sys.update()
+        components.barrel_manager_sys.update()
+
         game.action_handler.handle_actions()
 
         while game.accumulator >= game.dt:
@@ -153,10 +160,9 @@ if __name__ == "__main__":
             game.camera.update()
             game.accumulator -= game.dt
         
-        game.action_handler.get_player_input()
-        components.controller_sys.update()
-        
         screen.fill(colors.white)
         game.camera.draw_grid()
         components.graphics_sys.update(screen)
         pygame.display.update()
+        #clock.tick()
+        #print(game.living_entities, clock.get_fps())
