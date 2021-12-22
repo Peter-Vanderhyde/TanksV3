@@ -47,6 +47,10 @@ class Game:
         self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
     
+    def get_unique_id(self):
+        self.last_id += 1
+        return self.last_id
+    
     def create_entity(self, entity_id):
         # Create [-1, -1, -1, etc] because we don't know what components it will have
         component_indexes = [-1] * len(components.system_index)
@@ -56,6 +60,7 @@ class Game:
     def add_component(self, entity_id, component_name, *args, **kwargs):
         index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
         self.entities[entity_id][components.component_index[component_name]] = index
+        return entity_id
     
     def destroy_entity(self, entity_id):
         try:
@@ -132,10 +137,9 @@ if __name__ == "__main__":
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
     game.update_images(load_images())
-    id = game.last_id
+    id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
-    game.last_id += 1
 
     while 1:
         current_time = time.time()

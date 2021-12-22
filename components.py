@@ -105,8 +105,7 @@ class PlayerController:
                 return action.MoveDown(self.id, False)
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                id = self.game.last_id
-                self.game.last_id += 1
+                id = self.game.get_unique_id()
                 transform = self.game.get_component(self.id, "transform")
                 return action.Shoot(id, Vector2(transform.x, transform.y), 0, 1, transform.rotation, settings.PLAYER_MAX_SPEED, "bullet", "player")
 
