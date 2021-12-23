@@ -49,7 +49,7 @@ class Graphics(Component):
         self.id = id
         self.layer = layer
         self.transform_component = transform_component
-        # images = [(<name>, <offsetx>, <offsety>), (etc.)]
+        # images = [(<name>, <offsetx>, <offsety>, <rotation>), (etc.)]
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
@@ -134,7 +134,7 @@ class System:
     
     def add_component(self, game, *args, **kwargs):
         if self.first_available is None:
-            self.partition(game, 10)
+            self.partition(game, 100)
         index = self.first_available
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
@@ -225,12 +225,12 @@ class Graphics_System(System):
                 component = self.components[component_index]
                 if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
                     for index, element in enumerate(component.images):
-                        image, offsetx, offsety = element
+                        image, offsetx, offsety, rotation_offset, scale_offset = element
                         if component.transform_component.rotation != component.last_rotation:
                             ck = image.get_colorkey()
                             width, height = image.get_size()
-                            image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale), math.ceil(height * component.transform_component.scale)))
-                            image = pygame.transform.rotate(image, -component.transform_component.rotation)
+                            image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale * scale_offset), math.ceil(height * component.transform_component.scale * scale_offset)))
+                            image = pygame.transform.rotate(image, -component.transform_component.rotation - rotation_offset)
                             if ck:
                                 image.set_colorkey(ck)
                             component.last_used_images[index] = image
@@ -267,16 +267,18 @@ class Barrel_Manager_System(System):
                 # update barrel animations?
                 if component.shooting:
                     for barrel in component.barrels:
-                        scale, angle_offset, last_shot, cooldown, image_index = barrel
+                        last_shot, cooldown, image_index = barrel
+                        image, offset_x, offset_y, rotation_offset, scale_offset = component.graphics_component.images[image_index]
+                        scale = component.transform_component.scale * scale_offset
                         if time.time() - last_shot >= cooldown:
-                            barrel[2] = time.time()
+                            barrel[0] = time.time()
                             barrel_length = settings.BARREL_LENGTH * scale
-                            barrel_angle = component.transform_component.rotation + angle_offset
+                            barrel_angle = component.transform_component.rotation + rotation_offset
                             barrel_end = Vector2()
                             barrel_end.from_polar((barrel_length, barrel_angle))
-                            firing_point = Vector2(component.transform_component.x, component.transform_component.y) + barrel_end
+                            firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                  id, spawn_point, rotation, scale, angle, speed, type, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, 0, scale, barrel_angle, settings.PLAYER_MAX_SPEED, "player"))
+                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, 0, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
 
 
 transform_sys = Transform_System()
