@@ -49,7 +49,7 @@ class Graphics(Component):
         self.id = id
         self.layer = layer
         self.transform_component = transform_component
-        # images = [(<name>, <offsetx>, <offsety>, <rotation>), (etc.)]
+        # images = [(<name>, <offset_position>, <rotation>), (etc.)]
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
@@ -225,7 +225,7 @@ class Graphics_System(System):
                 component = self.components[component_index]
                 if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
                     for index, element in enumerate(component.images):
-                        image, offset_position, rotation_offset, scale_offset = element
+                        image, offset_vector, rotation_offset, scale_offset = element
                         if component.transform_component.rotation != component.last_rotation:
                             ck = image.get_colorkey()
                             width, height = image.get_size()
@@ -236,7 +236,7 @@ class Graphics_System(System):
                             component.last_used_images[index] = image
                         width, height = component.last_used_images[index].get_size()
                         camera = component.game.camera
-                        offset_x, offset_y = offset_position
+                        offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                         screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
@@ -269,7 +269,7 @@ class Barrel_Manager_System(System):
                 if component.shooting:
                     for barrel in component.barrels:
                         last_shot, cooldown, image_index = barrel
-                        image, offset_position, rotation_offset, scale_offset = component.graphics_component.images[image_index]
+                        image, offset_vector, rotation_offset, scale_offset = component.graphics_component.images[image_index]
                         scale = component.transform_component.scale * scale_offset
                         if time.time() - last_shot >= cooldown:
                             barrel[0] = time.time()
@@ -277,9 +277,9 @@ class Barrel_Manager_System(System):
                             barrel_angle = component.transform_component.rotation + rotation_offset
                             barrel_end = Vector2()
                             barrel_end.from_polar((barrel_length, barrel_angle))
-                            offset_x, offset_y = offset_position
-                            firing_point = Vector2(component.transform_component.x, component.transform_component.y) + barrel_end
-                            id = component.game.get_unique_id() #                  id, spawn_point, rotation, scale, angle, speed, type, owner
+                            offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
+                            firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
+                            id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
                             component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, 0, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
 
 
