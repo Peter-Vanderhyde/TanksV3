@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     game.update_images(load_images())
     id = game.get_unique_id()
-    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
 
     while 1:

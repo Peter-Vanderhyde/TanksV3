@@ -81,7 +81,7 @@ class MoveDown(Action):
 
 
 class SpawnPlayer(Action):
-    def __init__(self, player_id, spawn_point, rotation, scale, max_speed, accel, friction):
+    def __init__(self, player_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
         super().__init__(player_id)
         self.spawn_point = spawn_point
         self.rotation = rotation
@@ -90,15 +90,16 @@ class SpawnPlayer(Action):
         self.current_speed = 0
         self.target_speed = 0
         self.accel = accel
+        self.decel = decel
         self.friction = friction
     
     def execute_action(self, game):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", 1, [(game.images["barrel"], 0, 0), (game.images["player_body"], 0, 0)], game.get_component(self.id, "transform"))
-        game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.friction, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.decel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
-        game.add_component(self.id, "barrel manager", [[self.scale, 0.0, 0, 0.01, 0]], False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+        game.add_component(self.id, "barrel manager", [[self.scale, 0.0, 0, 0.4, 0]], False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
 
 
 class Spawn_Bullet(Action):
@@ -115,7 +116,7 @@ class Spawn_Bullet(Action):
         game.create_entity(self.id)
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_bullet"], 0, 0)], game.get_component(self.id, "transform"))
-        game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 0, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 1, 0, game.get_component(self.id, "transform"))
 
 
 class Start_Firing_Barrels(Action):

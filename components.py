@@ -29,10 +29,11 @@ class Transform(Component):
 class Physics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
-    def activate(self, id, angle, speeds, accel, friction, transform_component):
+    def activate(self, id, angle, speeds, accel, decel, friction, transform_component):
         self.id = id
         self.max_speed, current_speed, target_speed = speeds
         self.accel = accel
+        self.decel = decel
         self.friction = friction
         self.velocity = Vector2()
         self.velocity.from_polar((current_speed, angle))
@@ -177,9 +178,9 @@ class Physics_System(System):
         for component in self.components:
             if component.id is not None:
                 if component.target_velocity == Vector2(0, 0):
-                    component.velocity = component.velocity.lerp(component.target_velocity, component.friction)
+                    component.velocity = component.velocity.lerp(component.target_velocity, component.decel * component.friction)
                 else:
-                    component.velocity = component.velocity.lerp(component.target_velocity, component.accel - component.friction)
+                    component.velocity = component.velocity.lerp(component.target_velocity, component.accel - component.accel * component.friction)
 
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt

@@ -11,7 +11,8 @@ ASSETS = (("barrel", True, white), ("enemy_body", True), ("enemy_bullet", True),
 # Settings
 PLAYER_MAX_SPEED = 300
 PLAYER_ACCEL = 0.1
-PLAYER_FRICTION = 0.05
+PLAYER_DECEL = 0.07
+PLAYER_FRICTION = 0.5
 PLAYER_MOVE_KEYS = {
     "left":K_a,
     "right":K_d,
