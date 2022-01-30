@@ -1,3 +1,4 @@
+from tkinter import E
 import pygame
 import time
 import components
@@ -131,8 +132,17 @@ class Camera:
             pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
+def show_fps(fps_font):
+    clock.tick()
+    font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
+    fps_rect = font.get_rect()
+    fps_rect.topleft = 0, 0
+    screen.blit(font, fps_rect)
+
+
 if __name__ == "__main__":
     clock = pygame.time.Clock()
+    FPS_FONT = pygame.font.SysFont("couriernew", 15)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
     game = Game(screen)
@@ -142,8 +152,9 @@ if __name__ == "__main__":
     id = game.get_unique_id()
     game.add_action(actions.Spawn_Player(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.Focus_Camera(id, True))
-    id = game.get_unique_id()
-    game.add_action(actions.Spawn_Enemy(id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    enemy_id = game.get_unique_id()
+    game.add_action(actions.Spawn_Enemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.Start_Firing_Barrels(enemy_id))
 
     while 1:
         current_time = time.time()
@@ -157,6 +168,7 @@ if __name__ == "__main__":
         components.barrel_manager_sys.update()
 
         game.action_handler.handle_actions()
+        game.get_component(enemy_id, "transform").rotation += 0.5
 
         while game.accumulator >= game.dt:
             components.physics_sys.update(game.dt)
@@ -167,6 +179,5 @@ if __name__ == "__main__":
         game.camera.draw_grid()
         components.graphics_sys.update(screen)
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
+        show_fps(FPS_FONT)
         pygame.display.update()
-        #clock.tick()
-        #print(game.living_entities, clock.get_fps())

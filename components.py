@@ -11,6 +11,7 @@ class Component:
         self.game = game
         self.next_available = next_available
         self.id = None
+    
     def activate(self):
         """Any information needed by the class is given when the inactive component is 'activated'"""
         pass
@@ -19,6 +20,7 @@ class Component:
 class Transform(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
+    
     def activate(self, id, x, y, rotation, scale):
         self.id = id
         self.x = x
@@ -30,6 +32,7 @@ class Transform(Component):
 class Physics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
+    
     def activate(self, id, angle, speeds, accel, decel, friction, transform_component):
         self.id = id
         self.max_speed, current_speed, target_speed = speeds
@@ -46,6 +49,7 @@ class Physics(Component):
 class Graphics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
+    
     def activate(self, id, layer, images, transform_component):
         self.id = id
         self.layer = layer
@@ -59,6 +63,7 @@ class Graphics(Component):
 class Controller(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
+    
     def activate(self, id, controller_class):
         self.id = id
         self.controller_class = controller_class
@@ -132,12 +137,14 @@ class Player_Controller:
 class Barrel_Manager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
-    def activate(self, id, barrels, shooting, graphics_component, transform_component):
+    
+    def activate(self, id, barrels, shooting, owner_string, graphics_component, transform_component):
         self.id = id
-        # barrels = [[scale, angle_offset, last_shot, cooldown, image_index], [<next barrel>]]
+        # barrels = [[last_shot, cooldown, image_index], [<next barrel>]]
         # NOTE: reference each barrel in the order that they should be drawn
         self.barrels = barrels
         self.shooting = shooting
+        self.owner_string = owner_string
         self.graphics_component = graphics_component
         self.transform_component = transform_component
 
@@ -145,10 +152,21 @@ class Barrel_Manager(Component):
 class Life_Timer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
+    
     def activate(self, id, start_time, duration):
         self.id = id
         self.start_time = start_time
         self.duration = duration
+
+
+class Collider(Component):
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    
+    def activate(self, id, radius):
+        self.id = id
+        self.radius = radius
+        #TODO Add to a quad tree
 
 
 class System:
@@ -307,7 +325,7 @@ class Barrel_Manager_System(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
+                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
 
 
 class Life_Timer_System(System):
@@ -321,12 +339,33 @@ class Life_Timer_System(System):
                     component.game.destroy_entity(component.id)
 
 
+class Collider_System(System):
+    def __init__(self):
+        super().__init__(Collider)
+    
+    def remove_component(self, index):
+        try:
+            #TODO Remove them from the quad tree
+            self.components[index].id = None
+            self.components[index].next_available = self.first_available
+            self.first_available = index
+        except:
+            raise Exception("Unable to remove component.")
+    
+    def update(self):
+        for component in self.components:
+            if component is not None:
+                # update quad tree and then check nearest leaves
+                pass
+
+
 transform_sys = Transform_System()
 physics_sys = Physics_System()
 graphics_sys = Graphics_System()
 controller_sys = Controller_System()
 barrel_manager_sys = Barrel_Manager_System()
 life_timer_sys = Life_Timer_System()
+collider_sys = Collider_System()
 
 systems = {
     "transform":transform_sys,
@@ -334,7 +373,8 @@ systems = {
     "graphics":graphics_sys,
     "controller":controller_sys,
     "barrel manager":barrel_manager_sys,
-    "life timer":life_timer_sys
+    "life timer":life_timer_sys,
+    "collider":collider_sys
 }
 component_index = {
     "transform":0,
@@ -342,6 +382,7 @@ component_index = {
     "graphics":2,
     "controller":3,
     "barrel manager":4,
-    "life timer":5
+    "life timer":5,
+    "collider":6
 }
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys, life_timer_sys]
+system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys, life_timer_sys, collider_sys]

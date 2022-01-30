@@ -102,9 +102,9 @@ class Spawn_Player(Action):
         game.add_component(self.id, "graphics", 1, barrels + [(game.images["player_body"], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.decel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.Player_Controller(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
-        # [scale, angle_offset, last_shot, cooldown, image_index]
+        # [last_shot, cooldown, image_index]
         barrels = [[0, 0.5, 0]]
-        game.add_component(self.id, "barrel manager", barrels, False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+        game.add_component(self.id, "barrel manager", barrels, False, "player", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
 
 
 class Spawn_Enemy(Action):
@@ -130,7 +130,7 @@ class Spawn_Enemy(Action):
         game.add_component(self.id, "controller", game.components.Enemy_Controller(game, self.id, game.get_component(self.id, "transform")))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.5, 0]]
-        game.add_component(self.id, "barrel manager", barrels, False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+        game.add_component(self.id, "barrel manager", barrels, False, "enemy", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
 
 
 class Spawn_Bullet(Action):
