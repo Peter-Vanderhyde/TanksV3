@@ -2,6 +2,7 @@ import pygame
 import settings
 from pygame.math import Vector2
 import sys
+import time
 
 
 class Action:
@@ -121,6 +122,7 @@ class Spawn_Bullet(Action):
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_bullet"], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 1, 0, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "life timer", time.time(), 3)
 
 
 class Start_Firing_Barrels(Action):

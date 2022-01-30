@@ -148,6 +148,7 @@ if __name__ == "__main__":
         frame_time = current_time - game.last_time
         game.last_time = current_time
         game.accumulator += frame_time
+        components.life_timer_sys.update()
 
         game.action_handler.get_player_input()
         components.controller_sys.update()

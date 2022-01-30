@@ -126,6 +126,15 @@ class Barrel_Manager(Component):
         self.transform_component = transform_component
 
 
+class Life_Timer(Component):
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    def activate(self, id, start_time, duration):
+        self.id = id
+        self.start_time = start_time
+        self.duration = duration
+
+
 class System:
     def __init__(self, component_type):
         self.component_type = component_type
@@ -285,24 +294,38 @@ class Barrel_Manager_System(System):
                             component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
 
 
+class Life_Timer_System(System):
+    def __init__(self):
+        super().__init__(Life_Timer)
+    
+    def update(self):
+        for index, component in enumerate(self.components):
+            if component.id is not None:
+                if time.time() - component.start_time >= component.duration:
+                    component.game.destroy_entity(component.id)
+
+
 transform_sys = Transform_System()
 physics_sys = Physics_System()
 graphics_sys = Graphics_System()
 controller_sys = Controller_System()
 barrel_manager_sys = Barrel_Manager_System()
+life_timer_sys = Life_Timer_System()
 
 systems = {
     "transform":transform_sys,
     "physics":physics_sys,
     "graphics":graphics_sys,
     "controller":controller_sys,
-    "barrel manager":barrel_manager_sys
+    "barrel manager":barrel_manager_sys,
+    "life timer":life_timer_sys
 }
 component_index = {
     "transform":0,
     "physics":1,
     "graphics":2,
     "controller":3,
-    "barrel manager":4
+    "barrel manager":4,
+    "life timer":5
 }
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys]
+system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys, life_timer_sys]
