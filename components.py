@@ -134,7 +134,7 @@ class System:
     
     def add_component(self, game, *args, **kwargs):
         if self.first_available is None:
-            self.partition(game, 100)
+            self.partition(game, max(len(self.components) + 1, 10)) # Partitions at least 10 empty spaces, but otherwise doubles the size
         index = self.first_available
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
@@ -151,14 +151,16 @@ class System:
     def partition(self, game, amount):
         link = None
         new_comps = []
+        insert = new_comps.insert
+        length = len(self.components)
         for i in range(amount):
             comp = self.component_type(game, link)
-            new_comps.insert(0, comp)
+            insert(0, comp)
             if link is None:
-                link = len(self.components) + amount - 1
+                link = length + amount - 1
             else:
                 link -= 1
-        self.first_available = len(self.components)
+        self.first_available = length
         self.components += new_comps
     
     def update(self):
@@ -203,7 +205,7 @@ class Graphics_System(System):
         layer = args[1]
         self.check_layer_exists(layer)
         if self.first_available is None:
-            self.partition(game, 10)
+            self.partition(game, max(len(self.components) + 1, 10))
         index = self.first_available
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
@@ -280,7 +282,7 @@ class Barrel_Manager_System(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, 0, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
+                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, "player"))
 
 
 transform_sys = Transform_System()

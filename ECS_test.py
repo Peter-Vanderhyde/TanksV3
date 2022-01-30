@@ -163,6 +163,7 @@ if __name__ == "__main__":
         screen.fill(colors.white)
         game.camera.draw_grid()
         components.graphics_sys.update(screen)
+        pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
         pygame.display.update()
         #clock.tick()
         #print(game.living_entities, clock.get_fps())

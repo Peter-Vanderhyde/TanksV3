@@ -102,7 +102,7 @@ class SpawnPlayer(Action):
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.decel, self.friction, game.get_component(self.id, "transform"))
         game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
         # [scale, angle_offset, last_shot, cooldown, image_index]
-        barrels = [[0, 0.4, 0]]
+        barrels = [[0, 0.5, 0]]
         game.add_component(self.id, "barrel manager", barrels, False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
 
 
