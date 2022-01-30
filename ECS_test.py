@@ -43,7 +43,7 @@ class Game:
         self.living_entities = 0
         self.last_id = 0
 
-        self.action_handler = actions.ActionHandler(self, components.controller_sys)
+        self.action_handler = actions.Action_Handler(self, components.controller_sys)
         self.camera = Camera(self)
     
     def get_unique_id(self):
@@ -140,8 +140,10 @@ if __name__ == "__main__":
 
     game.update_images(load_images())
     id = game.get_unique_id()
-    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.FocusCamera(id, True))
+    game.add_action(actions.Spawn_Player(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.Focus_Camera(id, True))
+    id = game.get_unique_id()
+    game.add_action(actions.Spawn_Enemy(id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
 
     while 1:
         current_time = time.time()

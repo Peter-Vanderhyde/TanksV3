@@ -12,6 +12,7 @@ class Component:
         self.next_available = next_available
         self.id = None
     def activate(self):
+        """Any information needed by the class is given when the inactive component is 'activated'"""
         pass
 
 
@@ -63,7 +64,20 @@ class Controller(Component):
         self.controller_class = controller_class
 
 
-class PlayerController:
+class Enemy_Controller:
+    def __init__(self, game, id, transform_component):
+        self.game = game
+        self.id = id
+        self.transform_component = transform_component
+    
+    def update(self):
+        pass
+
+    def get_action(self, event):
+        pass
+
+
+class Player_Controller:
     def __init__(self, game, id, move_keys, transform_component):
         self.game = game
         self.id = id
@@ -73,11 +87,13 @@ class PlayerController:
         self.vely = 0
     
     def update(self):
+        # Point player towards mouse
         transform = self.transform_component
         distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
         angle = distance_between.as_polar()[1]
         transform.rotation = angle
 
+        # Setting the target velocity to key presses
         physics = self.game.get_component(self.id, "physics")
         physics.target_velocity = Vector2(self.velx, self.vely)
         if (self.velx, self.vely) != (0, 0):
@@ -89,22 +105,22 @@ class PlayerController:
             if event.key == K_ESCAPE:
                 return action.Quit()
             elif event.key == self.move_keys["left"]:
-                return action.MoveLeft(self.id, True)
+                return action.Move_Left(self.id, True)
             elif event.key == self.move_keys["right"]:
-                return action.MoveRight(self.id, True)
+                return action.Move_Right(self.id, True)
             elif event.key == self.move_keys["up"]:
-                return action.MoveUp(self.id, True)
+                return action.Move_Up(self.id, True)
             elif event.key == self.move_keys["down"]:
-                return action.MoveDown(self.id, True)
+                return action.Move_Down(self.id, True)
         elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return action.MoveLeft(self.id, False)
+                return action.Move_Left(self.id, False)
             elif event.key == self.move_keys["right"]:
-                return action.MoveRight(self.id, False)
+                return action.Move_Right(self.id, False)
             elif event.key == self.move_keys["up"]:
-                return action.MoveUp(self.id, False)
+                return action.Move_Up(self.id, False)
             elif event.key == self.move_keys["down"]:
-                return action.MoveDown(self.id, False)
+                return action.Move_Down(self.id, False)
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
                 return action.Start_Firing_Barrels(self.id)

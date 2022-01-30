@@ -25,7 +25,7 @@ class Quit(Action):
         sys.exit()
 
 
-class MoveLeft(Action):
+class Move_Left(Action):
     def __init__(self, id, move):
         super().__init__(id)
         self.move = move
@@ -39,7 +39,7 @@ class MoveLeft(Action):
                 controller.velx = 0
 
 
-class MoveRight(Action):
+class Move_Right(Action):
     def __init__(self, id, move):
         super().__init__(id)
         self.move = move
@@ -53,7 +53,7 @@ class MoveRight(Action):
                 controller.velx = 0
 
 
-class MoveUp(Action):
+class Move_Up(Action):
     def __init__(self, id, move):
         super().__init__(id)
         self.move = move
@@ -67,7 +67,7 @@ class MoveUp(Action):
                 controller.vely = 0
 
 
-class MoveDown(Action):
+class Move_Down(Action):
     def __init__(self, id, move):
         super().__init__(id)
         self.move = move
@@ -81,7 +81,7 @@ class MoveDown(Action):
                 controller.vely = 0
 
 
-class SpawnPlayer(Action):
+class Spawn_Player(Action):
     def __init__(self, player_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
         super().__init__(player_id)
         self.spawn_point = spawn_point
@@ -101,7 +101,33 @@ class SpawnPlayer(Action):
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
         game.add_component(self.id, "graphics", 1, barrels + [(game.images["player_body"], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.decel, self.friction, game.get_component(self.id, "transform"))
-        game.add_component(self.id, "controller", game.components.PlayerController(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
+        game.add_component(self.id, "controller", game.components.Player_Controller(game, self.id, settings.PLAYER_MOVE_KEYS, game.get_component(self.id, "transform")))
+        # [scale, angle_offset, last_shot, cooldown, image_index]
+        barrels = [[0, 0.5, 0]]
+        game.add_component(self.id, "barrel manager", barrels, False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+
+
+class Spawn_Enemy(Action):
+    def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
+        super().__init__(enemy_id)
+        self.spawn_point = spawn_point
+        self.rotation = rotation
+        self.scale = scale
+        self.max_speed = max_speed
+        self.current_speed = 0
+        self.target_speed = 0
+        self.accel = accel
+        self.decel = decel
+        self.friction = friction
+    
+    def execute_action(self, game):
+        game.create_entity(self.id)
+        game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
+        # (image, offset_vector, rotation_offset, scale_offset)
+        barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
+        game.add_component(self.id, "graphics", 1, barrels + [(game.images["enemy_body"], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.accel, self.decel, self.friction, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "controller", game.components.Enemy_Controller(game, self.id, game.get_component(self.id, "transform")))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.5, 0]]
         game.add_component(self.id, "barrel manager", barrels, False, game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
@@ -143,7 +169,7 @@ class Stop_Firing_Barrels(Action):
         manager.shooting = False
 
 
-class FocusCamera(Action):
+class Focus_Camera(Action):
     def __init__(self, focus_id, snap=False):
         super().__init__(focus_id)
         self.snap = snap
@@ -152,7 +178,7 @@ class FocusCamera(Action):
         game.camera.set_target(self.id, self.snap)
 
 
-class PositionCamera(Action):
+class Position_Camera(Action):
     def __init__(self, position):
         super().__init__(None)
         self.position = position
@@ -161,7 +187,7 @@ class PositionCamera(Action):
         game.camera.set_position(self.position)
 
 
-class ActionHandler:
+class Action_Handler:
     def __init__(self, game, controller_sys, actions=[]):
         self.game = game
         self.controller_sys = controller_sys
