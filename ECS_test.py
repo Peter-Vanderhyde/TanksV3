@@ -5,6 +5,7 @@ import components
 import actions
 import colors
 import settings
+import q_tree
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
@@ -46,6 +47,8 @@ class Game:
 
         self.action_handler = actions.Action_Handler(self, components.controller_sys)
         self.camera = Camera(self)
+
+        self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
     
     def get_unique_id(self):
         self.last_id += 1
