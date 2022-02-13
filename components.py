@@ -166,7 +166,7 @@ class Collider(Component):
     def activate(self, id, radius):
         self.id = id
         self.radius = radius
-        #TODO Add to a quad tree
+        self.cells = []
 
 
 class System:

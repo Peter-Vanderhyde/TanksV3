@@ -271,10 +271,11 @@ if __name__ == "__main__":
                 node = random.choice(nodes)
                 root.remove(node)
                 nodes.remove(node)
+                last_closest = []
             elif event.type == MOUSEBUTTONDOWN:
                 node = root.get_node_at_pos(Vector2(pygame.mouse.get_pos()))
                 if node.node:
-                    exists, closest = root.find_nearest_id(node.node, draw_time=0.2)
+                    exists, closest = root.find_nearest_id(node.node, draw_time=0.1)
                     if exists and closest is not None:
                         distance, closest_node = closest
                         print(distance)
@@ -291,7 +292,6 @@ if __name__ == "__main__":
                 exists, closest = root.find_nearest_id(mouse_node.node)
                 if exists and closest is not None:
                     distance, closest_node = closest
-                    print(distance)
                     draw_search_node(mouse_node)
                     last_closest = [mouse_node.node, closest_node]
                 else:

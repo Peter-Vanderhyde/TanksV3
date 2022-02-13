@@ -2,14 +2,16 @@ import pygame
 import sys
 import random
 import time
+from spatial_hashing_test import Hashing_Manager
 from pygame import transform
-from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
 
 font = pygame.font.Font('freesansbold.ttf', 25)
 
-NUM_OF_COMPONENTS = 2
+NUM_OF_COMPONENTS = 3
+DETECT_PHYSICS = False
+CELL_SIZE = 12
 
 screen = pygame.display.set_mode((750, 750))
 
@@ -20,7 +22,7 @@ blue_square = pygame.image.load("../blue_square.png").convert()
 red_square = pygame.image.load("../red_square.png").convert()
 green_square = pygame.image.load("../green_square.png").convert()
 
-class Transform:
+class Physics:
     def __init__(self, id, x, y, velocity, scale, bounce_percent):
         self.id = id
         self.x = x
@@ -34,6 +36,63 @@ class Graphics:
         self.id = id
         self.color = transform.scale(color, (transform_component.scale, transform_component.scale))
         self.transform_component = transform_component
+
+class Collider:
+    def __init__(self, id, rect, physics_component, graphics_component):
+        self.id = id
+        self.rect = rect
+        self.physics_component = physics_component
+        self.graphics_component = graphics_component
+        self.collision_cells = set()
+
+class ColliderSystem:
+    def __init__(self, cell_size):
+        self.components = [None]
+        self.first_available = 0
+        self.manager = Hashing_Manager(cell_size)
+    
+    def set_next_available(self):
+        for index, component in enumerate(self.components[self.first_available:], self.first_available):
+            if component == None:
+                self.first_available = index
+                return
+        self.first_available = len(self.components)
+        self.components.append(None)
+    
+    def add_component(self, *args, **kwargs):
+        index = self.first_available
+        self.components[index] = Collider(*args, **kwargs)
+        self.set_next_available()
+        return index
+    
+    def remove_component(self, index):
+        try:
+            self.manager.remove_id(self.components[index].id, self.components[index].rect)
+            self.components[index] = None
+        except:
+            raise Exception("Unable to remove component.")
+        
+        if index < self.first_available:
+            self.first_available = index
+    
+    def update(self):
+        for component in self.components:
+            if component != None:
+                component.rect.center = component.physics_component.x, component.physics_component.y
+                component.collision_cells = self.manager.move_id_for_rect(component.id, component.collision_cells, component.rect)
+        for component in self.components:
+            if component is not None:
+                collided = False
+                for cell in component.collision_cells:
+                    for id in self.manager.contents[cell]:
+                        if not collided and id != component.id:
+                            other_physics = get_component(id, "physics")
+                            other_pos = Vector2(other_physics.x, other_physics.y)
+                            if Vector2(component.rect.center).distance_to(other_pos) < (other_physics.scale / 2 + component.physics_component.scale / 2):
+                                component.graphics_component.color = transform.scale(red_ball, (component.physics_component.scale, component.physics_component.scale))
+                                collided = True
+                if not collided:
+                    component.graphics_component.color = transform.scale(green_ball, (component.physics_component.scale, component.physics_component.scale))
 
 class PhysicsSystem:
     def __init__(self):
@@ -50,7 +109,7 @@ class PhysicsSystem:
     
     def add_component(self, *args, **kwargs):
         index = self.first_available
-        self.components[index] = Transform(*args, **kwargs)
+        self.components[index] = Physics(*args, **kwargs)
         self.set_next_available()
         return index
     
@@ -154,7 +213,10 @@ class SetColor(Event):
 
 def add_component(entity_id, component_name, *args, **kwargs):
     index = systems[component_name].add_component(entity_id, *args, **kwargs)
-    entities[entity_id][component_id[component_name]] = index
+    try:
+        entities[entity_id][component_id[component_name]] = index
+    except:
+        raise RuntimeError("Could not put component in entities. Did you change NUM_OF_COMPONENTS?")
 
 def create_entity(entity_id):
     component_indexes = [-1] * NUM_OF_COMPONENTS
@@ -178,7 +240,7 @@ def get_component(entity_id, component_name):
 
 
 if __name__ == "__main__":
-    pygame.event.set_allowed([KEYDOWN])
+    pygame.event.set_allowed([pygame.KEYDOWN])
     BOUNCE = True
     SPEED = 150
     GRAVITY = 1000
@@ -198,14 +260,17 @@ if __name__ == "__main__":
     event_handler = EventHandler()
     physics_system = PhysicsSystem()
     graphics_system = GraphicsSystem()
+    collider_system = ColliderSystem(30)
 
     systems = {
         "physics":physics_system,
-        "graphics":graphics_system}
-    system_index = [physics_system, graphics_system]
+        "graphics":graphics_system,
+        "collider":collider_system}
+    system_index = [physics_system, graphics_system, collider_system]
     component_id = {
         "physics":0,
-        "graphics":1
+        "graphics":1,
+        "collider":2
     }
 
     next_id = 0
@@ -221,27 +286,27 @@ if __name__ == "__main__":
 
     while 1:
         for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-                elif event.key == K_r:
+                elif event.key == pygame.K_r:
                     event_handler.add_event(SetColor(red_ball))
-                elif event.key == K_b:
+                elif event.key == pygame.K_b:
                     event_handler.add_event(SetColor(blue_ball))
-                elif event.key == K_g:
+                elif event.key == pygame.K_g:
                     event_handler.add_event(SetColor(green_ball))
-                elif event.key == K_EQUALS:
+                elif event.key == pygame.K_EQUALS:
                     MAX_ENTITIES += 500
-                elif event.key == K_MINUS and MAX_ENTITIES != 500:
+                elif event.key == pygame.K_MINUS and MAX_ENTITIES != 500:
                     MAX_ENTITIES -= 500
-                elif event.key == K_RETURN:
+                elif event.key == pygame.K_RETURN:
                     emit = not emit
-                elif event.key == K_SPACE:
+                elif event.key == pygame.K_SPACE:
                     gravity = not gravity
-                elif event.key == K_UP:
+                elif event.key == pygame.K_UP:
                     emition_rate += 1
-                elif event.key == K_DOWN and emition_rate != 1:
+                elif event.key == pygame.K_DOWN and emition_rate != 1:
                     emition_rate -= 1
         
         for entity_id in chopping_block:
@@ -258,6 +323,8 @@ if __name__ == "__main__":
                 velocity.scale_to_length(random.uniform(-SPEED, SPEED))
                 add_component(next_id, "physics", mouse_pos[0], mouse_pos[1], velocity, random.randint(5, 10), random.uniform(1.2, 6.0))
                 add_component(next_id, "graphics", random.choice(colors), get_component(next_id, "physics"))
+                if DETECT_PHYSICS:
+                    add_component(next_id, "collider", pygame.Rect(0, 0, get_component(next_id, "physics").scale, get_component(next_id, "physics").scale), get_component(next_id, "physics"), get_component(next_id, "graphics"))
                 next_id += 1
                 living_entities += 1
 
@@ -280,6 +347,8 @@ if __name__ == "__main__":
         
         screen.fill(white)
         graphics_system.update(screen)
+        if DETECT_PHYSICS:
+            collider_system.update()
         if last_entity_count != living_entities:
             surf = font.render(str(living_entities), 1, black)
             rect = surf.get_rect()
