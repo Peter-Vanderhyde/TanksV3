@@ -105,6 +105,8 @@ class Spawn_Player(Action):
         # [last_shot, cooldown, image_index]
         barrels = [[0, 0.5, 0]]
         game.add_component(self.id, "barrel manager", barrels, False, "player", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+        # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
+        game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
 
 
 class Spawn_Enemy(Action):
@@ -131,11 +133,14 @@ class Spawn_Enemy(Action):
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.5, 0]]
         game.add_component(self.id, "barrel manager", barrels, False, "enemy", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
+        # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
+        game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
 
 
 class Spawn_Bullet(Action):
-    def __init__(self, bullet_id, spawn_point, rotation, scale, angle, speed, owner_string):
+    def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, owner_string):
         super().__init__(bullet_id)
+        self.owner_id = owner_id
         self.spawn_point = spawn_point
         self.rotation = rotation
         self.scale = scale
@@ -149,6 +154,8 @@ class Spawn_Bullet(Action):
         game.add_component(self.id, "graphics", 0, [(game.images[self.owner_string + "_bullet"], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
         game.add_component(self.id, "physics", self.angle, (self.speed, self.speed, self.speed), 1, 1, 0, game.get_component(self.id, "transform"))
         game.add_component(self.id, "life timer", time.time(), 3)
+        # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
+        game.add_component(self.id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles"], game.get_component(self.id, "transform"))
 
 
 class Start_Firing_Barrels(Action):

@@ -5,6 +5,23 @@ import settings
 from pygame.math import Vector2
 from pygame.locals import *
 
+'''
+-----------
+DEFINITIONS
+-----------
+
+Transform: (x, y, rotation, scale)
+Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
+Graphics: (layer, images: [(<name>, <offset_position>, <rotation>), (etc.)], transform_component)
+Controller: (controller_class)
+Enemy_Controller: (TBD)
+Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
+Barrel_Manager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
+Life_Timer: (start_time, duration)
+Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'objects'], transform_component)
+
+'''
+
 
 class Component:
     def __init__(self, game, next_available):
@@ -163,10 +180,15 @@ class Collider(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, radius):
+    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, transform_component):
         self.id = id
+        self.collision_id = collision_id
         self.radius = radius
-        self.cells = []
+        self.offset = offset
+        self.collision_category = collision_category
+        self.collidable_categories = collidable_categories
+        self.transform_component = transform_component
+        self.collision_cells = set()
 
 
 class System:
@@ -325,7 +347,7 @@ class Barrel_Manager_System(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
+                            component.game.add_action(component.game.actions.Spawn_Bullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
 
 
 class Life_Timer_System(System):
@@ -354,9 +376,24 @@ class Collider_System(System):
     
     def update(self):
         for component in self.components:
-            if component is not None:
-                # update quad tree and then check nearest leaves
-                pass
+            if component.id is not None:
+                component.game.collision_categories[component.collision_category].move_collider(component)
+        
+        for component in self.components:
+            if component.id is not None:
+                transform = component.transform_component
+                origin = Vector2(transform.x, transform.y) + component.offset
+                for category in component.collidable_categories:
+                    for cell in component.collision_cells:
+                        others = component.game.collision_categories[category].contents.get(cell)
+                        if others:
+                            for other_collider in others:
+                                if other_collider.collision_id != component.collision_id:
+                                    other_transform = other_collider.transform_component
+                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
+                                    if origin.distance_to(other_origin) < (component.radius + other_collider.radius):
+                                        pass
+                                        #print(f"{component.id} collided with {other_collider.id}")
 
 
 transform_sys = Transform_System()

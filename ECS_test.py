@@ -1,11 +1,11 @@
-from tkinter import E
 import pygame
 import time
 import components
 import actions
 import colors
 import settings
-import q_tree
+#import q_tree
+import spatial_hashing
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
@@ -48,7 +48,15 @@ class Game:
         self.action_handler = actions.Action_Handler(self, components.controller_sys)
         self.camera = Camera(self)
 
-        self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
+        #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
+        self.projectile_collision_manager = spatial_hashing.Grid_Manager(80)
+        self.actor_collision_manager = spatial_hashing.Grid_Manager(80)
+        self.object_collision_manager = spatial_hashing.Grid_Manager(80)
+        self.collision_categories = {
+            "projectiles":self.projectile_collision_manager,
+            "actors":self.actor_collision_manager,
+            "objects":self.object_collision_manager
+        }
     
     def get_unique_id(self):
         self.last_id += 1
@@ -78,7 +86,7 @@ class Game:
 
     def get_component(self, entity_id, component_name):
         try:
-            component = components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
+            component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
             return component
         except KeyError:
             raise KeyError("Tried to get component that does not exist.")
@@ -178,9 +186,14 @@ if __name__ == "__main__":
             game.camera.update()
             game.accumulator -= game.dt
         
+        components.collider_sys.update()
+        
         screen.fill(colors.white)
         game.camera.draw_grid()
         components.graphics_sys.update(screen)
+        for component in components.collider_sys.components:
+            if component.id is not None:
+                pygame.draw.circle(screen, (255, 0, 0), Vector2(component.transform_component.x, component.transform_component.y) + component.offset - game.camera.corner, component.radius, 2)
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
         show_fps(FPS_FONT)
         pygame.display.update()
