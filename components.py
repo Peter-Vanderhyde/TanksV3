@@ -185,7 +185,6 @@ class Collider(Component):
         self.collision_id = collision_id
         self.radius = radius
         self.offset = offset
-        self.scale = 1
         self.collision_category = collision_category
         self.collidable_categories = collidable_categories
         self.transform_component = transform_component

@@ -59,11 +59,3 @@ class Grid_Manager:
             if self.contents[cell] == []:
                 del self.contents[cell]
         collider.collision_cells = set()
-        """transform = collider.transform_component
-        origin = Vector2(transform.x, transform.y)
-        rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
-        for cell in self.get_cells_for_rect(rect):
-            self.contents[cell].remove(collider)
-            if self.contents[cell] == []:
-                del self.contents[cell]
-        collider.collision_cells = set()"""
