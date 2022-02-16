@@ -31,8 +31,9 @@ def load_images():
 
 
 class Game:
-    def __init__(self, screen):
+    def __init__(self, screen, collision_grid_width):
         self.screen = screen
+        self.collision_grid_width = collision_grid_width
         self.components = components
         self.actions = actions
         self.images = {}
@@ -49,14 +50,11 @@ class Game:
         self.camera = Camera(self)
 
         #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
-        self.projectile_collision_manager = spatial_hashing.Grid_Manager(80)
-        self.actor_collision_manager = spatial_hashing.Grid_Manager(80)
-        self.object_collision_manager = spatial_hashing.Grid_Manager(80)
-        self.collision_categories = {
-            "projectiles":self.projectile_collision_manager,
-            "actors":self.actor_collision_manager,
-            "objects":self.object_collision_manager
-        }
+        GM = spatial_hashing.Grid_Manager
+        collision_categories = ["projectiles", "actors", "objects"]
+        self.collision_categories = {}
+        for category in collision_categories:
+            self.collision_categories[category] = GM(self.collision_grid_width)
     
     def get_unique_id(self):
         self.last_id += 1
@@ -156,7 +154,7 @@ if __name__ == "__main__":
     FPS_FONT = pygame.font.SysFont("couriernew", 15)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
-    game = Game(screen)
+    game = Game(screen, settings.COLLISION_GRID_WIDTH)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
     game.update_images(load_images())
@@ -184,9 +182,8 @@ if __name__ == "__main__":
         while game.accumulator >= game.dt:
             components.physics_sys.update(game.dt)
             game.camera.update()
+            components.collider_sys.update()
             game.accumulator -= game.dt
-        
-        components.collider_sys.update()
         
         screen.fill(colors.white)
         game.camera.draw_grid()

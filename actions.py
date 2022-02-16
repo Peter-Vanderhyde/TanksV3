@@ -4,7 +4,6 @@ from pygame.math import Vector2
 import sys
 import time
 
-
 class Action:
     def __init__(self, id):
         self.id = id
@@ -15,7 +14,6 @@ class Action:
     def execute_action(self, game):
         pass
 
-
 class Quit(Action):
     def __init__(self, id=None):
         super().__init__(id)
@@ -23,7 +21,6 @@ class Quit(Action):
     def execute_action(self, game):
         pygame.quit()
         sys.exit()
-
 
 class Move_Left(Action):
     def __init__(self, id, move):
@@ -38,7 +35,6 @@ class Move_Left(Action):
             if controller.velx == -1:
                 controller.velx = 0
 
-
 class Move_Right(Action):
     def __init__(self, id, move):
         super().__init__(id)
@@ -51,7 +47,6 @@ class Move_Right(Action):
         else:
             if controller.velx == 1:
                 controller.velx = 0
-
 
 class Move_Up(Action):
     def __init__(self, id, move):
@@ -66,7 +61,6 @@ class Move_Up(Action):
             if controller.vely == -1:
                 controller.vely = 0
 
-
 class Move_Down(Action):
     def __init__(self, id, move):
         super().__init__(id)
@@ -79,7 +73,6 @@ class Move_Down(Action):
         else:
             if controller.vely == 1:
                 controller.vely = 0
-
 
 class Spawn_Player(Action):
     def __init__(self, player_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
@@ -108,7 +101,6 @@ class Spawn_Player(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
 
-
 class Spawn_Enemy(Action):
     def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
         super().__init__(enemy_id)
@@ -136,7 +128,6 @@ class Spawn_Enemy(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
 
-
 class Spawn_Bullet(Action):
     def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, owner_string):
         super().__init__(bullet_id)
@@ -157,7 +148,6 @@ class Spawn_Bullet(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles"], game.get_component(self.id, "transform"))
 
-
 class Start_Firing_Barrels(Action):
     def __init__(self, id):
         super().__init__(id)
@@ -165,7 +155,6 @@ class Start_Firing_Barrels(Action):
     def execute_action(self, game):
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = True
-
 
 class Stop_Firing_Barrels(Action):
     def __init__(self, id):
@@ -175,7 +164,6 @@ class Stop_Firing_Barrels(Action):
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = False
 
-
 class Focus_Camera(Action):
     def __init__(self, focus_id, snap=False):
         super().__init__(focus_id)
@@ -184,7 +172,6 @@ class Focus_Camera(Action):
     def execute_action(self, game):
         game.camera.set_target(self.id, self.snap)
 
-
 class Position_Camera(Action):
     def __init__(self, position):
         super().__init__(None)
@@ -192,7 +179,6 @@ class Position_Camera(Action):
     
     def execute_action(self, game):
         game.camera.set_position(self.position)
-
 
 class Action_Handler:
     def __init__(self, game, controller_sys, actions=[]):

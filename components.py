@@ -185,6 +185,7 @@ class Collider(Component):
         self.collision_id = collision_id
         self.radius = radius
         self.offset = offset
+        self.scale = 1
         self.collision_category = collision_category
         self.collidable_categories = collidable_categories
         self.transform_component = transform_component
@@ -196,6 +197,7 @@ class System:
         self.component_type = component_type
         self.components = []
         self.first_available = None
+        self.farthest_component = 0
     
     def add_component(self, game, *args, **kwargs):
         if self.first_available is None:
@@ -203,6 +205,8 @@ class System:
         index = self.first_available
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
+        if index > self.farthest_component:
+            self.farthest_component = index
         return index
     
     def remove_component(self, index):
@@ -210,6 +214,10 @@ class System:
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
+            if index == self.farthest_component:
+                while index - 1 >=0 and self.components[index - 1].id is None:
+                    index -= 1
+                self.farthest_component = index
         except:
             raise Exception("Unable to remove component.")
     
@@ -275,6 +283,8 @@ class Graphics_System(System):
         self.components[index].activate(*args, **kwargs)
         self.first_available = self.components[index].next_available
         self.layer_indexes[layer].append(index)
+        if index > self.farthest_component:
+            self.farthest_component = index
         return index
     
     def remove_component(self, index):
@@ -283,6 +293,10 @@ class Graphics_System(System):
             self.components[index].next_available = self.first_available
             self.layer_indexes[self.components[index].layer].remove(index)
             self.first_available = index
+            if index == self.farthest_component:
+                while index - 1 >=0 and self.components[index - 1].id is None:
+                    index -= 1
+                self.farthest_component = index
         except:
             raise Exception("Unable to remove component.")
     
@@ -367,13 +381,23 @@ class Collider_System(System):
     
     def remove_component(self, index):
         try:
-            #TODO Remove them from the quad tree
+            self.components[index].game.collision_categories[self.components[index].collision_category].remove_collider(self.components[index])
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
+            if index == self.farthest_component:
+                while index - 1 >=0 and self.components[index - 1].id is None:
+                    index -= 1
+                self.farthest_component = index
         except:
             raise Exception("Unable to remove component.")
     
+    def distance_between(self, a, b):
+        return math.sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y))
+
+    def distance_between_squared(self, a, b):
+        return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)
+
     def update(self):
         for component in self.components:
             if component.id is not None:
@@ -382,7 +406,7 @@ class Collider_System(System):
         for component in self.components:
             if component.id is not None:
                 transform = component.transform_component
-                origin = Vector2(transform.x, transform.y) + component.offset
+                origin = Vector2(transform.x, transform.y) + component.offset * component.scale
                 for category in component.collidable_categories:
                     for cell in component.collision_cells:
                         others = component.game.collision_categories[category].contents.get(cell)
@@ -390,10 +414,9 @@ class Collider_System(System):
                             for other_collider in others:
                                 if other_collider.collision_id != component.collision_id:
                                     other_transform = other_collider.transform_component
-                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
-                                    if origin.distance_to(other_origin) < (component.radius + other_collider.radius):
+                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset * other_collider.scale
+                                    if self.distance_between_squared(origin, other_origin) < (component.radius * component.scale + other_collider.radius * other_collider.scale) ** 2:
                                         pass
-                                        #print(f"{component.id} collided with {other_collider.id}")
 
 
 transform_sys = Transform_System()
