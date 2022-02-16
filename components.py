@@ -379,6 +379,11 @@ class Collider_System(System):
     def __init__(self):
         super().__init__(Collider)
     
+    def add_component(self, game, *args, **kwargs):
+        index = super().add_component(game, *args, **kwargs)
+        self.components[index].game.collision_categories[self.components[index].collision_category].insert_collider(self.components[index])
+        return index
+    
     def remove_component(self, index):
         try:
             self.components[index].game.collision_categories[self.components[index].collision_category].remove_collider(self.components[index])
@@ -406,7 +411,7 @@ class Collider_System(System):
         for component in self.components:
             if component.id is not None:
                 transform = component.transform_component
-                origin = Vector2(transform.x, transform.y) + component.offset * component.scale
+                origin = Vector2(transform.x, transform.y) + component.offset
                 for category in component.collidable_categories:
                     for cell in component.collision_cells:
                         others = component.game.collision_categories[category].contents.get(cell)
@@ -414,9 +419,12 @@ class Collider_System(System):
                             for other_collider in others:
                                 if other_collider.collision_id != component.collision_id:
                                     other_transform = other_collider.transform_component
-                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset * other_collider.scale
-                                    if self.distance_between_squared(origin, other_origin) < (component.radius * component.scale + other_collider.radius * other_collider.scale) ** 2:
-                                        pass
+                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
+                                    if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                                        categs = (component.collision_category, other_collider.collision_category)
+                                        if categs == ("projectiles", "projectiles"):
+                                            component.game.destroy_entity(component.id)
+                                            component.game.destroy_entity(other_collider.id)
 
 
 transform_sys = Transform_System()

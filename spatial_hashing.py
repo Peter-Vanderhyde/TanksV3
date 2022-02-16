@@ -36,22 +36,34 @@ class Grid_Manager:
         origin = Vector2(transform.x, transform.y)
         rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
         old_cells = list(collider.collision_cells)
+        old_cells.sort()
         new_cells = self.get_cells_for_rect(rect)
+        new_cells.sort()
         if new_cells != old_cells:
             for cell in old_cells:
                 if cell not in new_cells:
                     self.contents[cell].remove(collider)
+                    if self.contents[cell] == []:
+                        del self.contents[cell]
             for cell in new_cells:
-                if id not in self.contents.setdefault(cell, []):
-                    self.contents[cell].append(collider)
+                if cell not in self.contents or collider not in self.contents[cell]:
+                    self.contents.setdefault(cell, []).append(collider)
         collider.collision_cells = set(new_cells)
+        print(len(self.contents))
     
     def remove_collider(self, collider):
-        transform = collider.transform_component
+        collision_cells = collider.collision_cells
+        for cell in collision_cells:
+            if collider in self.contents[cell]:
+                self.contents[cell].remove(collider)
+            if self.contents[cell] == []:
+                del self.contents[cell]
+        collider.collision_cells = set()
+        """transform = collider.transform_component
         origin = Vector2(transform.x, transform.y)
         rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
         for cell in self.get_cells_for_rect(rect):
             self.contents[cell].remove(collider)
             if self.contents[cell] == []:
                 del self.contents[cell]
-        collider.collision_cells = set()
+        collider.collision_cells = set()"""
