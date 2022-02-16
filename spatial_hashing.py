@@ -49,7 +49,6 @@ class Grid_Manager:
                 if cell not in self.contents or collider not in self.contents[cell]:
                     self.contents.setdefault(cell, []).append(collider)
         collider.collision_cells = set(new_cells)
-        print(len(self.contents))
     
     def remove_collider(self, collider):
         collision_cells = collider.collision_cells
