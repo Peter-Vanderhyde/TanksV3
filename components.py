@@ -434,14 +434,10 @@ class Collider_System(System):
                                                     0.08,
                                                     random.uniform(3.0, 5.0)))
                                             component.game.add_action(component.game.actions.Destroy(component.id))
-                                            #component.game.add_action(component.game.actions.Destroy(other_collider.id))
-                                            #component.game.destroy_entity(component.id)
-                                            #component.game.destroy_entity(other_collider.id)
                                         elif categs == ("projectiles", "actors"):
                                             tank_physics = component.game.get_component(other_collider.collision_id, "physics")
                                             tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
                                             component.game.add_action(component.game.actions.Destroy(component.id))
-                                            #component.game.destroy_entity(component.id)
 
 
 transform_sys = Transform_System()
