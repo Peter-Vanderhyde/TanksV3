@@ -4,7 +4,6 @@ import components
 import actions
 import colors
 import settings
-#import q_tree
 import spatial_hashing
 from pygame.locals import *
 from pygame.math import Vector2

@@ -121,6 +121,9 @@ class Spawn_Player(Action):
         game.add_component(self.id, "barrel manager", barrels, False, "player", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "properties", ("health"))
+        prop = game.get_component(self.id, "properties")
+        prop.set("health", 100)
 
 class Spawn_Enemy(Action):
     def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
@@ -225,6 +228,8 @@ class Destroy(Action):
     
     def execute_action(self, game):
         game.destroy_entity(self.id)
+
+
 
 class Action_Handler:
     def __init__(self, game, controller_sys, actions=[]):
