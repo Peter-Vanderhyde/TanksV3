@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+import random
 import settings
 from pygame.math import Vector2
 from pygame.locals import *
@@ -12,7 +13,7 @@ DEFINITIONS
 
 Transform: (x, y, rotation, scale)
 Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
-Graphics: (layer, images: [(<name>, <offset_position>, <rotation>), (etc.)], transform_component)
+Graphics: (layer-(0 is the bottom layer), images: [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)], transform_component)
 Controller: (controller_class)
 Enemy_Controller: (TBD)
 Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
@@ -71,7 +72,7 @@ class Graphics(Component):
         self.id = id
         self.layer = layer
         self.transform_component = transform_component
-        # images = [(<name>, <offset_position>, <rotation>), (etc.)]
+        # images = [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)]
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
@@ -268,7 +269,7 @@ class Graphics_System(System):
     
     def check_layer_exists(self, layer):
         """Instead of hardcoding the number of graphics layers that I will use, I let it create a new
-        layer whenever a higher one is needed"""
+        layer whenever a higher one is needed. 0 is the bottom layer."""
         while self.layers < layer + 1:
             self.layer_indexes.append([])
             self.layers += 1
@@ -422,8 +423,25 @@ class Collider_System(System):
                                     if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                                         categs = (component.collision_category, other_collider.collision_category)
                                         if categs == ("projectiles", "projectiles"):
-                                            component.game.destroy_entity(component.id)
-                                            component.game.destroy_entity(other_collider.id)
+                                            particle_num = 10
+                                            for i in range(particle_num):
+                                                component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
+                                                    component.game.get_component(component.collision_id, "barrel manager").owner_string + "_particle",
+                                                    Vector2(transform.x, transform.y),
+                                                    360 / particle_num * i,
+                                                    random.uniform(0.5, 1.2),
+                                                    [400, random.randint(100, 600), 0],
+                                                    0.08,
+                                                    random.uniform(3.0, 5.0)))
+                                            component.game.add_action(component.game.actions.Destroy(component.id))
+                                            #component.game.add_action(component.game.actions.Destroy(other_collider.id))
+                                            #component.game.destroy_entity(component.id)
+                                            #component.game.destroy_entity(other_collider.id)
+                                        elif categs == ("projectiles", "actors"):
+                                            tank_physics = component.game.get_component(other_collider.collision_id, "physics")
+                                            tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
+                                            component.game.add_action(component.game.actions.Destroy(component.id))
+                                            #component.game.destroy_entity(component.id)
 
 
 transform_sys = Transform_System()

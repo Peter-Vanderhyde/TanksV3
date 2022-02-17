@@ -87,7 +87,7 @@ class Game:
             component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
             return component
         except KeyError:
-            raise KeyError("Tried to get component that does not exist.")
+            raise KeyError(f"Component `{component_name}` or entity `{entity_id}` does not exist.")
     
     def add_action(self, action):
         self.action_handler.add_action(action)
@@ -188,9 +188,6 @@ if __name__ == "__main__":
         screen.fill(colors.white)
         game.camera.draw_grid()
         components.graphics_sys.update(screen)
-        for component in components.collider_sys.components:
-            if component.id is not None:
-                pygame.draw.circle(screen, (255, 0, 0), Vector2(component.transform_component.x, component.transform_component.y) + component.offset - game.camera.corner, component.radius, 2)
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
         show_fps(FPS_FONT)
         pygame.display.update()

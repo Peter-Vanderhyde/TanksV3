@@ -4,6 +4,27 @@ from pygame.math import Vector2
 import sys
 import time
 
+'''
+-----------
+DEFINITIONS
+-----------
+
+Quit: ()
+Move_Left: (<bool>move)
+Move_Right: (<bool>move)
+Move_Up: (<bool>move)
+Move_Down: (<bool>move)
+Spawn_Player: (player_id, spawn_point, rotation, scale, max_speed, accel, decel, friction)
+Spawn_Enemy: (enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction)
+Spawn_Bullet: (bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, owner_string)
+Spawn_Particle: (id, image_string, spawn_point, rotation, scale, speeds: [<max_speed>, <current_speed>, <target_speed>], decel, lifetime)
+Start_Firing_Barrels: (id) # Needs a barrel manager to work
+Stop_Firing_Barrels: (id)
+Focus_Camera: (focus_id, snap=False)
+Position_Camera: (position)
+Destroy: (id)
+'''
+
 class Action:
     def __init__(self, id):
         self.id = id
@@ -148,6 +169,24 @@ class Spawn_Bullet(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles"], game.get_component(self.id, "transform"))
 
+class Spawn_Particle(Action):
+    def __init__(self, id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime):
+        super().__init__(id)
+        self.image_string = image_string
+        self.spawn_point = spawn_point
+        self.rotation = rotation
+        self.scale = scale
+        self.max_speed, self.current_speed, self.target_speed = speeds
+        self.decel = decel
+        self.lifetime = lifetime
+    
+    def execute_action(self, game):
+        game.create_entity(self.id)
+        game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
+        game.add_component(self.id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.id, "transform"))
+        game.add_component(self.id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), 1, self.decel, settings.PLAYER_FRICTION, game.get_component(self.id, "transform"))
+        game.add_component(self.id, "life timer", time.time(), self.lifetime)
+
 class Start_Firing_Barrels(Action):
     def __init__(self, id):
         super().__init__(id)
@@ -179,6 +218,13 @@ class Position_Camera(Action):
     
     def execute_action(self, game):
         game.camera.set_position(self.position)
+
+class Destroy(Action):
+    def __init__(self, id):
+        super().__init__(id)
+    
+    def execute_action(self, game):
+        game.destroy_entity(self.id)
 
 class Action_Handler:
     def __init__(self, game, controller_sys, actions=[]):
