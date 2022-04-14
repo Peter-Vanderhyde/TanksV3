@@ -10,6 +10,7 @@ from pygame.locals import *
 -----------
 DEFINITIONS
 -----------
+(Use <component>.activate? to see args)
 
 Transform: (x, y, rotation, scale)
 Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
@@ -421,15 +422,20 @@ class Collider_System(System):
                                     if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                                         categs = (component.collision_category, other_collider.collision_category)
                                         if categs == ("projectiles", "projectiles"):
-                                            particle_num = 10
+                                            particle_num = 6
                                             for i in range(particle_num):
+                                                particles = ["particle_2", "particle_3"]
+                                                particle = random.randrange(0, len(particles))
+                                                scale = 1 - 0.2 * particle
+                                                decel = (scale - 0.5) / 0.7 * 0.1
+                                                scale = 1
                                                 component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
-                                                    component.game.get_component(component.collision_id, "barrel manager").owner_string + "_particle",
+                                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
                                                     Vector2(transform.x, transform.y),
-                                                    360 / particle_num * i,
-                                                    random.uniform(0.5, 1.2),
-                                                    [400, random.randint(100, 600), 0],
-                                                    0.08,
+                                                    random.uniform(transform.rotation - 40, transform.rotation + 40),
+                                                    scale,
+                                                    [400, random.randint(100, 300), 0],
+                                                    decel,
                                                     random.uniform(3.0, 5.0)))
                                             component.game.add_action(component.game.actions.Destroy(component.id))
                                         '''elif categs == ("projectiles", "actors"):

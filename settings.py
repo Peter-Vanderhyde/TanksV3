@@ -11,8 +11,12 @@ ASSETS = (("barrel", True, white),
 ("enemy_bullet", True, white),
 ("player_body", True, white),
 ("player_bullet", True, white),
-("enemy_particle", True, white),
-("player_particle", True, white))
+("particle_enemy", True, white),
+("particle_player", True, white),
+("particle_2_enemy", True, white),
+("particle_2_player", True, white),
+("particle_3_enemy", True, white),
+("particle_3_player", True, white))
 
 # Settings
 PLAYER_MAX_SPEED = 300

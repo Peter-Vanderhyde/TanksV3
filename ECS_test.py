@@ -164,7 +164,9 @@ if __name__ == "__main__":
     game.add_action(actions.Spawn_Enemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.Start_Firing_Barrels(enemy_id))
 
-    while 1:
+    game.action_handler.handle_actions()
+
+    while True:
         current_time = time.time()
         frame_time = current_time - game.last_time
         game.last_time = current_time
@@ -175,14 +177,15 @@ if __name__ == "__main__":
         components.controller_sys.update()
         components.barrel_manager_sys.update()
 
-        game.action_handler.handle_actions()
-        game.get_component(enemy_id, "transform").rotation += 0.5
 
         while game.accumulator >= game.dt:
+            game.get_component(enemy_id, "transform").rotation += 100 * game.dt
             components.physics_sys.update(game.dt)
             game.camera.update()
             components.collider_sys.update()
+            game.action_handler.handle_actions()
             game.accumulator -= game.dt
+        
         
         screen.fill(colors.white)
         game.camera.draw_grid()
