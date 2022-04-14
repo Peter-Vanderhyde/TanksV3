@@ -10,6 +10,7 @@ from pygame.locals import *
 -----------
 DEFINITIONS
 -----------
+(Use <component>.activate? to see args)
 
 Transform: (x, y, rotation, scale)
 Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
@@ -34,7 +35,6 @@ class Component:
         """Any information needed by the class is given when the inactive component is 'activated'"""
         pass
 
-
 class Transform(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -45,7 +45,6 @@ class Transform(Component):
         self.y = y
         self.rotation = rotation
         self.scale = scale
-
 
 class Physics(Component):
     def __init__(self, game, next_available):
@@ -63,7 +62,6 @@ class Physics(Component):
         self.target_velocity.from_polar((target_speed, angle))
         self.transform_component = transform_component
 
-
 class Graphics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -77,7 +75,6 @@ class Graphics(Component):
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
 
-
 class Controller(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -85,7 +82,6 @@ class Controller(Component):
     def activate(self, id, controller_class):
         self.id = id
         self.controller_class = controller_class
-
 
 class Enemy_Controller:
     def __init__(self, game, id, transform_component):
@@ -98,7 +94,6 @@ class Enemy_Controller:
 
     def get_action(self, event):
         pass
-
 
 class Player_Controller:
     def __init__(self, game, id, move_keys, transform_component):
@@ -151,7 +146,6 @@ class Player_Controller:
             if event.button == 1:
                 return action.Stop_Firing_Barrels(self.id)
 
-
 class Barrel_Manager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -166,7 +160,6 @@ class Barrel_Manager(Component):
         self.graphics_component = graphics_component
         self.transform_component = transform_component
 
-
 class Life_Timer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -175,7 +168,6 @@ class Life_Timer(Component):
         self.id = id
         self.start_time = start_time
         self.duration = duration
-
 
 class Collider(Component):
     def __init__(self, game, next_available):
@@ -191,6 +183,20 @@ class Collider(Component):
         self.transform_component = transform_component
         self.collision_cells = set()
 
+class Properties(Component):
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    
+    def activate(self, id, properties):
+        self.id = id
+        self.properties_dict = {}
+        [self.properties_dict.setdefault(property) for property in properties]
+    
+    def get(self, property):
+        return self.properties_dict[property]
+    
+    def set(self, property, value):
+        self.properties_dict[property] = value
 
 class System:
     def __init__(self, component_type):
@@ -239,11 +245,9 @@ class System:
     def update(self):
         pass
 
-
 class Transform_System(System):
     def __init__(self):
         super().__init__(Transform)
-
 
 class Physics_System(System):
     def __init__(self):
@@ -259,7 +263,6 @@ class Physics_System(System):
 
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
-
 
 class Graphics_System(System):
     def __init__(self):
@@ -321,7 +324,6 @@ class Graphics_System(System):
                         screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
-
 class Controller_System(System):
     def __init__(self):
         super().__init__(Controller)
@@ -337,7 +339,6 @@ class Controller_System(System):
                 action = component.controller_class.get_action(event)
                 if action is not None:
                     component.game.add_action(action)
-
 
 class Barrel_Manager_System(System):
     def __init__(self):
@@ -363,17 +364,15 @@ class Barrel_Manager_System(System):
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
                             component.game.add_action(component.game.actions.Spawn_Bullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
 
-
 class Life_Timer_System(System):
     def __init__(self):
         super().__init__(Life_Timer)
     
     def update(self):
-        for index, component in enumerate(self.components):
+        for component in self.components:
             if component.id is not None:
                 if time.time() - component.start_time >= component.duration:
                     component.game.destroy_entity(component.id)
-
 
 class Collider_System(System):
     def __init__(self):
@@ -423,22 +422,30 @@ class Collider_System(System):
                                     if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                                         categs = (component.collision_category, other_collider.collision_category)
                                         if categs == ("projectiles", "projectiles"):
-                                            particle_num = 10
+                                            particle_num = 6
                                             for i in range(particle_num):
+                                                particles = ["particle_2", "particle_3"]
+                                                particle = random.randrange(0, len(particles))
+                                                scale = 1 - 0.2 * particle
+                                                decel = (scale - 0.5) / 0.7 * 0.1
+                                                scale = 1
                                                 component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
-                                                    component.game.get_component(component.collision_id, "barrel manager").owner_string + "_particle",
+                                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
                                                     Vector2(transform.x, transform.y),
-                                                    360 / particle_num * i,
-                                                    random.uniform(0.5, 1.2),
-                                                    [400, random.randint(100, 600), 0],
-                                                    0.08,
+                                                    random.uniform(transform.rotation - 40, transform.rotation + 40),
+                                                    scale,
+                                                    [400, random.randint(100, 300), 0],
+                                                    decel,
                                                     random.uniform(3.0, 5.0)))
                                             component.game.add_action(component.game.actions.Destroy(component.id))
-                                        elif categs == ("projectiles", "actors"):
+                                        '''elif categs == ("projectiles", "actors"):
                                             tank_physics = component.game.get_component(other_collider.collision_id, "physics")
                                             tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
-                                            component.game.add_action(component.game.actions.Destroy(component.id))
+                                            component.game.add_action(component.game.actions.Destroy(component.id))'''
 
+class Properties_System(System):
+    def __init__(self):
+        super().__init__(Properties)
 
 transform_sys = Transform_System()
 physics_sys = Physics_System()
@@ -447,6 +454,7 @@ controller_sys = Controller_System()
 barrel_manager_sys = Barrel_Manager_System()
 life_timer_sys = Life_Timer_System()
 collider_sys = Collider_System()
+properties_sys = Properties_System()
 
 systems = {
     "transform":transform_sys,
@@ -455,15 +463,11 @@ systems = {
     "controller":controller_sys,
     "barrel manager":barrel_manager_sys,
     "life timer":life_timer_sys,
-    "collider":collider_sys
+    "collider":collider_sys,
+    "properties":properties_sys
 }
-component_index = {
-    "transform":0,
-    "physics":1,
-    "graphics":2,
-    "controller":3,
-    "barrel manager":4,
-    "life timer":5,
-    "collider":6
-}
-system_index = [transform_sys, physics_sys, graphics_sys, controller_sys, barrel_manager_sys, life_timer_sys, collider_sys]
+component_index = {} # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+for i, component in enumerate(systems):
+    component_index[component] = i
+
+system_index = [s for s in systems.values()]
