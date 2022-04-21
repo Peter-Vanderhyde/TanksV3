@@ -3,6 +3,7 @@ import math
 import time
 import random
 import settings
+import numpy as np
 from pygame.math import Vector2
 from pygame.locals import *
 
@@ -243,6 +244,7 @@ class System:
         self.components += new_comps
     
     def update(self):
+        """Contains whatever code should be run for that component every loop"""
         pass
 
 class Transform_System(System):
@@ -254,7 +256,8 @@ class Physics_System(System):
         super().__init__(Physics)
     
     def update(self, dt):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 if component.target_velocity == Vector2(0, 0):
                     component.velocity = component.velocity.lerp(component.target_velocity, component.decel * component.friction)
@@ -329,12 +332,14 @@ class Controller_System(System):
         super().__init__(Controller)
 
     def update(self):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 component.controller_class.update()
     
     def get_action_from_event(self, event):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 action = component.controller_class.get_action(event)
                 if action is not None:
@@ -345,7 +350,8 @@ class Barrel_Manager_System(System):
         super().__init__(Barrel_Manager)
     
     def update(self):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 # update barrel animations?
                 if component.shooting:
@@ -369,7 +375,8 @@ class Life_Timer_System(System):
         super().__init__(Life_Timer)
     
     def update(self):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 if time.time() - component.start_time >= component.duration:
                     component.game.destroy_entity(component.id)
@@ -403,11 +410,14 @@ class Collider_System(System):
         return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)
 
     def update(self):
-        for component in self.components:
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 component.game.collision_categories[component.collision_category].move_collider(component)
         
-        for component in self.components:
+        # THIS IS A HORRID FUNCTION
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
             if component.id is not None:
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
