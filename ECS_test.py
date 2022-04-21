@@ -49,6 +49,7 @@ class Game:
         self.camera = Camera(self)
 
         #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
+        # TODO Fix this monstrosity
         GM = spatial_hashing.Grid_Manager
         collision_categories = ["projectiles", "actors", "objects"]
         self.collision_categories = {}
