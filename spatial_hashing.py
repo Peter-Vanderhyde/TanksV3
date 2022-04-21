@@ -35,19 +35,19 @@ class Grid_Manager:
         transform = collider.transform_component
         origin = Vector2(transform.x, transform.y)
         rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
-        old_cells = list(collider.collision_cells)
-        old_cells.sort()
-        new_cells = self.get_cells_for_rect(rect)
-        new_cells.sort()
+        old_cells = collider.collision_cells
+        new_cells = set(self.get_cells_for_rect(rect))
         if new_cells != old_cells:
-            for cell in old_cells:
-                if cell not in new_cells:
-                    self.contents[cell].remove(collider)
-                    if self.contents[cell] == []:
-                        del self.contents[cell]
-            for cell in new_cells:
-                if cell not in self.contents or collider not in self.contents[cell]:
-                    self.contents.setdefault(cell, []).append(collider)
+            expired = old_cells - new_cells
+            for cell in expired:
+                self.contents[cell].remove(collider)
+                if self.contents[cell] == []:
+                    del self.contents[cell]
+            
+            brand_new = new_cells - old_cells
+            for cell in brand_new:
+                self.contents.setdefault(cell, []).append(collider)
+            
         collider.collision_cells = set(new_cells)
     
     def remove_collider(self, collider):
