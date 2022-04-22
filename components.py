@@ -177,10 +177,17 @@ class Collider(Component):
     def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, transform_component):
         self.id = id
         self.collision_id = collision_id
+        # This is the id of the actual parent entity this collider is connected
+        # to. This allows easy reference when collisions are detected for changing
+        # health, experience, etc.
         self.radius = radius
         self.offset = offset
         self.collision_category = collision_category
+        # The category that this collider component falls under.
+        # It can only have one.
         self.collidable_categories = collidable_categories
+        # This is a list of all of the collision categories that this collider can collide
+        # with. Any colliders not under these categories will be ignored when checking collisions
         self.transform_component = transform_component
         self.collision_cells = set()
 
@@ -421,37 +428,40 @@ class Collider_System(System):
             if component.id is not None:
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
-                for category in component.collidable_categories:
-                    for cell in component.collision_cells:
-                        others = component.game.collision_categories[category].contents.get(cell)
-                        if others:
-                            for other_collider in others:
-                                if other_collider.collision_id != component.collision_id:
-                                    other_transform = other_collider.transform_component
-                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
-                                    if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
-                                        categs = (component.collision_category, other_collider.collision_category)
-                                        if categs == ("projectiles", "projectiles"):
-                                            particle_num = 6
-                                            for i in range(particle_num):
-                                                particles = ["particle_2", "particle_3"]
-                                                particle = random.randrange(0, len(particles))
-                                                scale = 1 - 0.2 * particle
-                                                decel = (scale - 0.5) / 0.7 * 0.1
-                                                scale = 1
-                                                component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
-                                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
-                                                    Vector2(transform.x, transform.y),
-                                                    random.uniform(transform.rotation - 40, transform.rotation + 40),
-                                                    scale,
-                                                    [400, random.randint(100, 300), 0],
-                                                    decel,
-                                                    random.uniform(3.0, 5.0)))
-                                            component.game.add_action(component.game.actions.Destroy(component.id))
-                                        '''elif categs == ("projectiles", "actors"):
-                                            tank_physics = component.game.get_component(other_collider.collision_id, "physics")
-                                            tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
-                                            component.game.add_action(component.game.actions.Destroy(component.id))'''
+                colliding_with_set = set().union(*[component.game.collision_categories[c].contents.get(cell)
+                        for cell in component.collision_cells for c in component.collidable_categories
+                        if component.game.collision_categories[c].contents.get(cell) != None])
+                # These for loops loop through the categories that the collider is colliding with
+                # and gets the cells of each, ignoring any that are empty (ie None).
+                # It combines the cell sets of all the dictionaries that are in the same cell as itself.
+                colliding_with_set -= {component}
+                # Removes itself from the set so it doesn't collide with itself.
+                for other_collider in colliding_with_set:
+                    other_transform = other_collider.transform_component
+                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
+                    if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                        categs = (component.collision_category, other_collider.collision_category)
+                        if categs == ("projectiles", "projectiles"):
+                            particle_num = 6
+                            for i in range(particle_num):
+                                particles = ["particle_2", "particle_3"]
+                                particle = random.randrange(0, len(particles))
+                                scale = 1 - 0.2 * particle
+                                decel = (scale - 0.5) / 0.7 * 0.1
+                                scale = 1
+                                component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
+                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
+                                    Vector2(transform.x, transform.y),
+                                    random.uniform(transform.rotation - 40, transform.rotation + 40),
+                                    scale,
+                                    [400, random.randint(100, 300), 0],
+                                    decel,
+                                    random.uniform(3.0, 5.0)))
+                            component.game.add_action(component.game.actions.Destroy(component.id))
+                        '''elif categs == ("projectiles", "actors"):
+                            tank_physics = component.game.get_component(other_collider.collision_id, "physics")
+                            tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
+                            component.game.add_action(component.game.actions.Destroy(component.id))'''
 
 class Properties_System(System):
     def __init__(self):
