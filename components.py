@@ -28,6 +28,7 @@ Collider: (collision_id, radius, offset, collision_category, collidable_categori
 
 class Component:
     def __init__(self, game, next_available):
+        """Stores the id of the entity that it's a component of"""
         self.game = game
         self.next_available = next_available
         self.id = None
@@ -190,21 +191,6 @@ class Collider(Component):
         # with. Any colliders not under these categories will be ignored when checking collisions
         self.transform_component = transform_component
         self.collision_cells = set()
-
-class Properties(Component):
-    def __init__(self, game, next_available):
-        super().__init__(game, next_available)
-    
-    def activate(self, id, properties):
-        self.id = id
-        self.properties_dict = {}
-        [self.properties_dict.setdefault(property) for property in properties]
-    
-    def get(self, property):
-        return self.properties_dict[property]
-    
-    def set(self, property, value):
-        self.properties_dict[property] = value
 
 class System:
     def __init__(self, component_type):
@@ -394,12 +380,12 @@ class Collider_System(System):
     
     def add_component(self, game, *args, **kwargs):
         index = super().add_component(game, *args, **kwargs)
-        self.components[index].game.collision_categories[self.components[index].collision_category].insert_collider(self.components[index])
+        self.components[index].game.collision_maps[self.components[index].collision_category].insert_collider(self.components[index])
         return index
     
     def remove_component(self, index):
         try:
-            self.components[index].game.collision_categories[self.components[index].collision_category].remove_collider(self.components[index])
+            self.components[index].game.collision_maps[self.components[index].collision_category].remove_collider(self.components[index])
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
@@ -420,17 +406,18 @@ class Collider_System(System):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                component.game.collision_categories[component.collision_category].move_collider(component)
+                component.game.collision_maps[component.collision_category].move_collider(component)
         
         # THIS IS A HORRID FUNCTION
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
+                game = component.game
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
-                colliding_with_set = set().union(*[component.game.collision_categories[c].contents.get(cell)
+                colliding_with_set = set().union(*[game.collision_maps[c].contents.get(cell)
                         for cell in component.collision_cells for c in component.collidable_categories
-                        if component.game.collision_categories[c].contents.get(cell) != None])
+                        if game.collision_maps[c].contents.get(cell) != None])
                 # These for loops loop through the categories that the collider is colliding with
                 # and gets the cells of each, ignoring any that are empty (ie None).
                 # It combines the cell sets of all the dictionaries that are in the same cell as itself.
@@ -440,8 +427,13 @@ class Collider_System(System):
                     other_transform = other_collider.transform_component
                     other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
                     if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                        parent_entity_id = component.collision_id
+                        collided_with_id = other_collider.collision_id
                         categs = (component.collision_category, other_collider.collision_category)
-                        if categs == ("projectiles", "projectiles"):
+                        if categs == ("projectiles", "actors"):
+                            game.add_action(game.actions.Damage(collided_with_id, 10))
+                            game.add_action(game.actions.Destroy(component.id))
+                        elif categs == ("projectiles", "projectiles"):
                             particle_num = 6
                             for i in range(particle_num):
                                 particles = ["particle_2", "particle_3"]
@@ -449,23 +441,20 @@ class Collider_System(System):
                                 scale = 1 - 0.2 * particle
                                 decel = (scale - 0.5) / 0.7 * 0.1
                                 scale = 1
-                                component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
-                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
+                                game.add_action(game.actions.Spawn_Particle(game.get_unique_id(),
+                                    f"{particles[particle]}_{game.get_component(parent_entity_id, 'barrel manager').owner_string}",
                                     Vector2(transform.x, transform.y),
                                     random.uniform(transform.rotation - 40, transform.rotation + 40),
                                     scale,
                                     [400, random.randint(100, 300), 0],
                                     decel,
                                     random.uniform(3.0, 5.0)))
-                            component.game.add_action(component.game.actions.Destroy(component.id))
+                            game.add_action(game.actions.Destroy(component.id))
                         '''elif categs == ("projectiles", "actors"):
                             tank_physics = component.game.get_component(other_collider.collision_id, "physics")
                             tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
                             component.game.add_action(component.game.actions.Destroy(component.id))'''
 
-class Properties_System(System):
-    def __init__(self):
-        super().__init__(Properties)
 
 transform_sys = Transform_System()
 physics_sys = Physics_System()
@@ -474,7 +463,6 @@ controller_sys = Controller_System()
 barrel_manager_sys = Barrel_Manager_System()
 life_timer_sys = Life_Timer_System()
 collider_sys = Collider_System()
-properties_sys = Properties_System()
 
 systems = {
     "transform":transform_sys,
@@ -483,10 +471,11 @@ systems = {
     "controller":controller_sys,
     "barrel manager":barrel_manager_sys,
     "life timer":life_timer_sys,
-    "collider":collider_sys,
-    "properties":properties_sys
+    "collider":collider_sys
 }
-component_index = {} # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+component_index = {}
+# Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+
 for i, component in enumerate(systems):
     component_index[component] = i
 
