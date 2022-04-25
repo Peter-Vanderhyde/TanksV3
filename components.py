@@ -431,7 +431,7 @@ class Collider_System(System):
                         collided_with_id = other_collider.collision_id
                         categs = (component.collision_category, other_collider.collision_category)
                         if categs == ("projectiles", "actors"):
-                            game.add_action(game.actions.Damage(collided_with_id, 10))
+                            game.add_action(game.actions.Damage(collided_with_id, game.get_property(component.id, "damage")))
                             game.add_action(game.actions.Destroy(component.id))
                         elif categs == ("projectiles", "projectiles"):
                             particle_num = 6

@@ -123,6 +123,7 @@ class Spawn_Player(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
         game.add_property(self.id, "health", 100)
+        game.add_property(self.id, "damage", 10)
 
 class Spawn_Enemy(Action):
     def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
@@ -151,6 +152,7 @@ class Spawn_Enemy(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
         game.add_property(self.id, "health", 100)
+        game.add_property(self.id, "damage", 10)
 
 class Spawn_Bullet(Action):
     def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, owner_string):
@@ -171,6 +173,7 @@ class Spawn_Bullet(Action):
         game.add_component(self.id, "life timer", time.time(), 3)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles"], game.get_component(self.id, "transform"))
+        game.add_property(self.id, "damage", game.get_property(self.owner_id, "damage"))
 
 class Spawn_Particle(Action):
     def __init__(self, id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime):
