@@ -11,6 +11,27 @@ pygame.init()
 
 
 def load_image(name, alpha=True, colorkey=()):
+    """
+    Loads in images from the IMAGE_PATH in settings.
+
+    Parameters
+    ----------
+    name : str
+        The name of the image to load without the extension.
+    
+    alpha : bool=True
+        Whether or not there is alpha in the image, either already there or not.
+    
+    colorkey : tuple=()
+        A tuple of the RGB value that should be made transparent in the image.
+        If this is being set, then alpha must also be set to True.
+    
+    Returns
+    -------
+    image
+        The loaded image object.
+    """
+    
     if alpha:
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert_alpha()
         if colorkey != ():
@@ -21,6 +42,15 @@ def load_image(name, alpha=True, colorkey=()):
 
 
 def load_images():
+    """
+    Loads every image given in the ASSETS tuple of the settings module.
+
+    Returns
+    -------
+    dict -> {'image_name': <image_obj>, ...}
+        A dictionary of every loaded image.
+    """
+
     d = {}
     for asset in settings.ASSETS:
         image = load_image(*asset)
@@ -46,26 +76,27 @@ class Game:
         self.last_id = 0
 
         #TODO Fix this action controller system at some point
-        self.action_handler = actions.Action_Handler(self, components.controller_sys)
+        self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
 
         self.entity_props = {}
 
         #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
-        GM = spatial_hashing.Grid_Manager
+        GM = spatial_hashing.GridManager
         collision_categories = ["projectiles", "actors", "objects"]
         self.collision_maps = {}
         for category in collision_categories:
             self.collision_maps[category] = GM(self.collision_grid_width)
     
     def get_unique_id(self):
-        """Keeps track of the last given id so it's guaranteed to be unique"""
+        """Returns an int that's guaranteed to be unique."""
+
         self.last_id += 1
         return self.last_id - 1
     
     def create_entity(self, entity_id):
-        """Adds a new id to the entity dictionary with each component index
-        defaulted to -1 since it's not yet known what components it will have"""
+        """Adds a new id to the list of entities without any components yet."""
+
         # Create [-1, -1, -1, etc] because we don't know what components it will have
         component_indexes = [-1] * len(components.system_index)
         # Each entity is just this list of component indexes associated with an id key
@@ -74,17 +105,20 @@ class Game:
         self.entity_props[entity_id] = {}
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
-        """Give the given entity a new component such as physics or graphics"""
+
         index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
         self.entities[entity_id][components.component_index[component_name]] = index
         return entity_id
     
     def add_property(self, entity_id, property, value):
-        """Add a new property to this entity (i.e. health)"""
+        """Adds a new property to an entity such as health or damage."""
+
         self.set_property(entity_id, property, value)
     
     def destroy_entity(self, entity_id):
-        """Deactivates each of the components of the given entity"""
+        """Deactivates each of the components of an entity, and remove the id from
+        the list of entities."""
+
         try:
             for i, index in enumerate(self.entities[entity_id]):
                 if index != -1:
@@ -95,7 +129,8 @@ class Game:
             pass
 
     def get_component(self, entity_id, component_name):
-        """Returns the given component of the given entity"""
+        """Gives a reference of a component of an entity."""
+
         try:
             component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
             return component
@@ -103,19 +138,23 @@ class Game:
             raise KeyError(f"Component `{component_name}` or entity `{entity_id}` does not exist.")
     
     def get_property(self, entity_id, property):
-        """Returns the property of that entity by reference"""
+        """Gives a reference of a property of an entity."""
+
         return self.entity_props[entity_id][property]
     
     def set_property(self, entity_id, property, value):
-        """Changes the value of an entity's property"""
+        """Changes the value of an entity's property."""
+
         self.entity_props[entity_id][property] = value
     
     def add_action(self, action):
-        """Put an action into the handler's queue and will be executed next cycle"""
+        """Append an action onto the handler's queue to be executed next cycle."""
+
         self.action_handler.add_action(action)
     
     def update_images(self, new_images_dict):
-        """Updates the images dictionary with the given image dictionary"""
+        """Takes a dictionary of images and adds it to the dictionary of images."""
+
         self.images.update(new_images_dict)
 
 
@@ -131,6 +170,20 @@ class Camera:
             self.set_target(self.target_id)
 
     def set_target(self, target_id, jump=False):
+        """
+        This function changes the target of the camera, what it follows, to some
+        entity. It does require that the entity has a Transform component.
+
+        Parameters
+        ----------
+        target_id : int
+            This is the id of the entity that the target should be set to.
+        
+        jump : bool=False
+            When this is set to True, the camera does not pan to the new target.
+            It teleports there.
+        """
+
         try:
             self.target = self.game.get_component(target_id, "transform")
             if jump:
@@ -149,7 +202,9 @@ class Camera:
             self.corner += self.velocity * self.game.dt
     
     def draw_grid(self):
-        # Draw grid lines
+        """This function draw the background lines of the grid that move as the
+        player does."""
+
         game = self.game
         grid_box_w, grid_box_h = (settings.GRID_SIZE, settings.GRID_SIZE)
 
@@ -165,6 +220,8 @@ class Camera:
 
 
 def show_fps(fps_font):
+    """This function just displays the current fps in the topleft corner."""
+    
     clock.tick()
     #font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
     font = fps_font.render(f"Health: {game.entity_props[0]['health']}", False, colors.blue)
@@ -183,11 +240,11 @@ if __name__ == "__main__":
 
     game.update_images(load_images())
     id = game.get_unique_id()
-    game.add_action(actions.Spawn_Player(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.Focus_Camera(id, True))
+    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.FocusCamera(id, True))
     enemy_id = game.get_unique_id()
-    game.add_action(actions.Spawn_Enemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.Start_Firing_Barrels(enemy_id))
+    game.add_action(actions.SpawnEnemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.StartFiringBarrels(enemy_id))
 
     game.action_handler.handle_actions()
 

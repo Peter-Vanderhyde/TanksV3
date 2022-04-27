@@ -1,7 +1,7 @@
 import pygame
 from pygame.math import Vector2
 
-class Grid_Manager:
+class GridManager:
     def __init__(self, cell_size):
         """Takes the cell size for checking collisions"""
         self.cell_size = cell_size

@@ -6,17 +6,19 @@ monitor = pygame.display.Info()
 SCREEN_SIZE = (monitor.current_w - 50, monitor.current_h - 75)
 IMAGE_PATH = "Images/"
 # [<name>, <alpha>, <colorkey>]
-ASSETS = (("barrel", True, white),
-("enemy_body", True, white),
-("enemy_bullet", True, white),
-("player_body", True, white),
-("player_bullet", True, white),
-("particle_enemy", True, white),
-("particle_player", True, white),
-("particle_2_enemy", True, white),
-("particle_2_player", True, white),
-("particle_3_enemy", True, white),
-("particle_3_player", True, white))
+ASSETS = (
+    ("barrel", True, white),
+    ("enemy_body", True, white),
+    ("enemy_bullet", True, white),
+    ("player_body", True, white),
+    ("player_bullet", True, white),
+    ("particle_enemy", True, white),
+    ("particle_player", True, white),
+    ("particle_2_enemy", True, white),
+    ("particle_2_player", True, white),
+    ("particle_3_enemy", True, white),
+    ("particle_3_player", True, white)
+)
 
 # Settings
 PLAYER_MAX_SPEED = 300

@@ -27,17 +27,19 @@ Collider: (collision_id, radius, offset, collision_category, collidable_categori
 
 
 class Component:
+
     def __init__(self, game, next_available):
-        """Stores the id of the entity that it's a component of"""
         self.game = game
         self.next_available = next_available
         self.id = None
     
     def activate(self):
         """Any information needed by the class is given when the inactive component is 'activated'"""
+
         pass
 
 class Transform(Component):
+
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -49,6 +51,7 @@ class Transform(Component):
         self.scale = scale
 
 class Physics(Component):
+
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -85,7 +88,7 @@ class Controller(Component):
         self.id = id
         self.controller_class = controller_class
 
-class Enemy_Controller:
+class EnemyController:
     def __init__(self, game, id, transform_component):
         self.game = game
         self.id = id
@@ -97,7 +100,7 @@ class Enemy_Controller:
     def get_action(self, event):
         pass
 
-class Player_Controller:
+class PlayerController:
     def __init__(self, game, id, move_keys, transform_component):
         self.game = game
         self.id = id
@@ -125,30 +128,30 @@ class Player_Controller:
             if event.key == K_ESCAPE:
                 return action.Quit()
             elif event.key == self.move_keys["left"]:
-                return action.Move_Left(self.id, True)
+                return action.MoveLeft(self.id, True)
             elif event.key == self.move_keys["right"]:
-                return action.Move_Right(self.id, True)
+                return action.MoveRight(self.id, True)
             elif event.key == self.move_keys["up"]:
-                return action.Move_Up(self.id, True)
+                return action.MoveUp(self.id, True)
             elif event.key == self.move_keys["down"]:
-                return action.Move_Down(self.id, True)
+                return action.MoveDown(self.id, True)
         elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return action.Move_Left(self.id, False)
+                return action.MoveLeft(self.id, False)
             elif event.key == self.move_keys["right"]:
-                return action.Move_Right(self.id, False)
+                return action.MoveRight(self.id, False)
             elif event.key == self.move_keys["up"]:
-                return action.Move_Up(self.id, False)
+                return action.MoveUp(self.id, False)
             elif event.key == self.move_keys["down"]:
-                return action.Move_Down(self.id, False)
+                return action.MoveDown(self.id, False)
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                return action.Start_Firing_Barrels(self.id)
+                return action.StartFiringBarrels(self.id)
         elif event.type == MOUSEBUTTONUP:
             if event.button == 1:
-                return action.Stop_Firing_Barrels(self.id)
+                return action.StopFiringBarrels(self.id)
 
-class Barrel_Manager(Component):
+class BarrelManager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -162,7 +165,7 @@ class Barrel_Manager(Component):
         self.graphics_component = graphics_component
         self.transform_component = transform_component
 
-class Life_Timer(Component):
+class LifeTimer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -240,11 +243,11 @@ class System:
         """Contains whatever code should be run for that component every loop"""
         pass
 
-class Transform_System(System):
+class TransformSystem(System):
     def __init__(self):
         super().__init__(Transform)
 
-class Physics_System(System):
+class PhysicsSystem(System):
     def __init__(self):
         super().__init__(Physics)
     
@@ -260,7 +263,7 @@ class Physics_System(System):
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
 
-class Graphics_System(System):
+class GraphicsSystem(System):
     def __init__(self):
         super().__init__(Graphics)
         self.layer_indexes = []
@@ -269,6 +272,7 @@ class Graphics_System(System):
     def check_layer_exists(self, layer):
         """Instead of hardcoding the number of graphics layers that I will use, I let it create a new
         layer whenever a higher one is needed. 0 is the bottom layer."""
+
         while self.layers < layer + 1:
             self.layer_indexes.append([])
             self.layers += 1
@@ -320,7 +324,7 @@ class Graphics_System(System):
                         screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
-class Controller_System(System):
+class ControllerSystem(System):
     def __init__(self):
         super().__init__(Controller)
 
@@ -338,9 +342,9 @@ class Controller_System(System):
                 if action is not None:
                     component.game.add_action(action)
 
-class Barrel_Manager_System(System):
+class BarrelManagerSystem(System):
     def __init__(self):
-        super().__init__(Barrel_Manager)
+        super().__init__(BarrelManager)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -361,11 +365,11 @@ class Barrel_Manager_System(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
+                            component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
 
-class Life_Timer_System(System):
+class LifeTimerSystem(System):
     def __init__(self):
-        super().__init__(Life_Timer)
+        super().__init__(LifeTimer)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -374,7 +378,7 @@ class Life_Timer_System(System):
                 if time.time() - component.start_time >= component.duration:
                     component.game.destroy_entity(component.id)
 
-class Collider_System(System):
+class ColliderSystem(System):
     def __init__(self):
         super().__init__(Collider)
     
@@ -441,7 +445,7 @@ class Collider_System(System):
                                 scale = 1 - 0.2 * particle
                                 decel = (scale - 0.5) / 0.7 * 0.1
                                 scale = 1
-                                game.add_action(game.actions.Spawn_Particle(game.get_unique_id(),
+                                game.add_action(game.actions.SpawnParticle(game.get_unique_id(),
                                     f"{particles[particle]}_{game.get_component(parent_entity_id, 'barrel manager').owner_string}",
                                     Vector2(transform.x, transform.y),
                                     random.uniform(transform.rotation - 40, transform.rotation + 40),
@@ -456,13 +460,13 @@ class Collider_System(System):
                             component.game.add_action(component.game.actions.Destroy(component.id))'''
 
 
-transform_sys = Transform_System()
-physics_sys = Physics_System()
-graphics_sys = Graphics_System()
-controller_sys = Controller_System()
-barrel_manager_sys = Barrel_Manager_System()
-life_timer_sys = Life_Timer_System()
-collider_sys = Collider_System()
+transform_sys = TransformSystem()
+physics_sys = PhysicsSystem()
+graphics_sys = GraphicsSystem()
+controller_sys = ControllerSystem()
+barrel_manager_sys = BarrelManagerSystem()
+life_timer_sys = LifeTimerSystem()
+collider_sys = ColliderSystem()
 
 systems = {
     "transform":transform_sys,
