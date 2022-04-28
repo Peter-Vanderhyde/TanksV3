@@ -5,33 +5,13 @@ import actions
 import colors
 import settings
 import spatial_hashing
+import helpers
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
 
 
 def load_image(name, alpha=True, colorkey=()):
-    """
-    Loads in images from the IMAGE_PATH in settings.
-
-    Parameters
-    ----------
-    name : str
-        The name of the image to load without the extension.
-    
-    alpha : bool=True
-        Whether or not there is alpha in the image, either already there or not.
-    
-    colorkey : tuple=()
-        A tuple of the RGB value that should be made transparent in the image.
-        If this is being set, then alpha must also be set to True.
-    
-    Returns
-    -------
-    image
-        The loaded image object.
-    """
-    
     if alpha:
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert_alpha()
         if colorkey != ():
@@ -42,15 +22,6 @@ def load_image(name, alpha=True, colorkey=()):
 
 
 def load_images():
-    """
-    Loads every image given in the ASSETS tuple of the settings module.
-
-    Returns
-    -------
-    dict -> {'image_name': <image_obj>, ...}
-        A dictionary of every loaded image.
-    """
-
     d = {}
     for asset in settings.ASSETS:
         image = load_image(*asset)
@@ -65,6 +36,8 @@ class Game:
         self.collision_grid_width = collision_grid_width
         self.components = components
         self.actions = actions
+        self.colors = colors
+        self.helpers = helpers
         self.images = {}
 
         self.dt = 0.01
@@ -170,26 +143,17 @@ class Camera:
             self.set_target(self.target_id)
 
     def set_target(self, target_id, jump=False):
-        """
-        This function changes the target of the camera, what it follows, to some
-        entity. It does require that the entity has a Transform component.
-
-        Parameters
-        ----------
-        target_id : int
-            This is the id of the entity that the target should be set to.
-        
-        jump : bool=False
-            When this is set to True, the camera does not pan to the new target.
-            It teleports there.
-        """
-
         try:
             self.target = self.game.get_component(target_id, "transform")
+            self.target_id = target_id
             if jump:
                 self.set_position(self.target)
         except KeyError:
             raise AttributeError("Camera target does not exist or does not have a transform component.")
+    
+    def clear_target(self):
+        self.target_id = None
+        self.target = None
     
     def set_position(self, position):
         self.corner = Vector2(position.x - self.width // 2, position.y - self.height // 2)
@@ -271,7 +235,8 @@ if __name__ == "__main__":
         
         screen.fill(colors.white)
         game.camera.draw_grid()
-        components.graphics_sys.update(screen)
+        components.graphics_sys.update()
+        components.health_bar_sys.update()
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
         show_fps(FPS_FONT)
         pygame.display.update()

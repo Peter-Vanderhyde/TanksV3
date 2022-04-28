@@ -111,6 +111,11 @@ class SpawnPlayer(Action):
     
     def execute_action(self, game):
         game.create_entity(self.id)
+
+        game.add_property(self.id, "health", 100)
+        game.add_property(self.id, "max health", 100)
+        game.add_property(self.id, "damage", 10)
+
         game.add_component(self.id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
@@ -122,8 +127,7 @@ class SpawnPlayer(Action):
         game.add_component(self.id, "barrel manager", barrels, False, "player", game.get_component(self.id, "graphics"), game.get_component(self.id, "transform"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.id, "collider", self.id, 21, Vector2(0, 0), "actors", [], game.get_component(self.id, "transform"))
-        game.add_property(self.id, "health", 100)
-        game.add_property(self.id, "damage", 10)
+        game.add_component(self.id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.id, "transform"))
 
 class SpawnEnemy(Action):
     def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction):
@@ -232,6 +236,8 @@ class Destroy(Action):
     
     def execute_action(self, game):
         game.destroy_entity(self.id)
+        if game.camera.target_id == self.id:
+            game.camera.clear_target()
 
 class Damage(Action):
     def __init__(self, id_to_damage, damage):
@@ -253,7 +259,11 @@ class ActionHandler:
     def get_player_input(self):
         events = pygame.event.get()
         for event in events:
-            self.controller_sys.get_action_from_event(event)
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            else:
+                self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
         self.actions.append(action)
