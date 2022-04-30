@@ -193,8 +193,7 @@ def show_fps(fps_font):
     """This function just displays the current fps in the topleft corner."""
     
     clock.tick()
-    #font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
-    font = fps_font.render(f"Health: {game.entity_props[0]['health']}", False, colors.blue)
+    font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
     fps_rect = font.get_rect()
     fps_rect.topleft = 0, 0
     screen.blit(font, fps_rect)
