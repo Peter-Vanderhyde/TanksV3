@@ -466,7 +466,7 @@ class ColliderSystem(System):
                             if game.get_property(other_collider.id, "health") - damage <= 0:
                                 game.add_action(game.actions.Destroy(other_collider.id))
                                 game.add_action(game.actions.FocusCamera(component.collision_id))
-                                game.helpers.spawn_particles(component,
+                                game.helpers.spawn_particles(other_collider,
                                     20,
                                     ["particle_2", "particle_3"],
                                     [1, 2],
