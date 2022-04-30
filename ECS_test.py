@@ -67,6 +67,11 @@ class Game:
         self.last_id += 1
         return self.last_id - 1
     
+    def is_alive(self, entity_id):
+        """Return whether the given entity exists in entities still"""
+
+        return entity_id in self.entities
+    
     def create_entity(self, entity_id):
         """Adds a new id to the list of entities without any components yet."""
 
@@ -97,6 +102,7 @@ class Game:
                 if index != -1:
                     components.system_index[i].remove_component(index)
             self.entities.pop(entity_id)
+            self.entity_props.pop(entity_id)
             self.living_entities -= 1
         except:
             pass
@@ -225,7 +231,10 @@ if __name__ == "__main__":
 
 
         while game.accumulator >= game.dt:
-            game.get_component(enemy_id, "transform").rotation += 100 * game.dt
+            try:
+                game.get_component(enemy_id, "transform").rotation += 100 * game.dt
+            except:
+                pass
             components.physics_sys.update(game.dt)
             game.camera.update()
             components.collider_sys.update()

@@ -55,9 +55,10 @@ class Physics(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, angle, speeds, accel, decel, friction, transform_component):
+    def activate(self, id, angle, speeds, rotational_force, accel, decel, friction, transform_component, rotation_friction=True):
         self.id = id
         self.max_speed, current_speed, target_speed = speeds
+        self.rotational_force = rotational_force
         self.accel = accel
         self.decel = decel
         self.friction = friction
@@ -66,6 +67,7 @@ class Physics(Component):
         self.target_velocity = Vector2()
         self.target_velocity.from_polar((target_speed, angle))
         self.transform_component = transform_component
+        self.rotation_friction = rotation_friction
 
 class Graphics(Component):
     def __init__(self, game, next_available):
@@ -274,6 +276,12 @@ class PhysicsSystem(System):
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
 
+                component.transform_component.rotation += component.rotational_force * 10 * dt
+                if component.rotation_friction and component.rotational_force:
+                    v = Vector2(1, 0) * component.rotational_force
+                    v = v.lerp(Vector2(), min(component.rotational_force * 0.05 * dt, 0.05))
+                    component.rotational_force = v.length()
+
 class GraphicsSystem(System):
     def __init__(self):
         super().__init__(Graphics)
@@ -449,24 +457,31 @@ class ColliderSystem(System):
                             game.helpers.spawn_particles(component, particle_num,
                                 ["particle_2", "particle_3"],
                                 [1, 1],
-                                [0, 360])
+                                [100, 200],
+                                [0, 360],
+                                rotational_force_range=[10, 20])
                             damage = game.get_property(component.id, "damage")
                             game.add_action(game.actions.Damage(collided_with_id, damage))
                             game.add_action(game.actions.Destroy(component.id))
                             if game.get_property(other_collider.id, "health") - damage <= 0:
                                 game.add_action(game.actions.Destroy(other_collider.id))
                                 game.add_action(game.actions.FocusCamera(component.collision_id))
+                                game.helpers.spawn_particles(component,
+                                    20,
+                                    ["particle_2", "particle_3"],
+                                    [1, 2],
+                                    [200, 900],
+                                    [0, 360],
+                                    rotational_force_range=[10, 50])
                         elif categs == ("projectiles", "projectiles"):
                             particle_num = 6
                             game.helpers.spawn_particles(component, particle_num,
                                 ["particle_2", "particle_3"],
                                 [1, 1],
-                                [transform.rotation - 40, transform.rotation + 40])
+                                [100, 200],
+                                [transform.rotation - 40, transform.rotation + 40],
+                                rotational_force_range=[10, 20])
                             game.add_action(game.actions.Destroy(component.id))
-                        '''elif categs == ("projectiles", "actors"):
-                            tank_physics = component.game.get_component(other_collider.collision_id, "physics")
-                            tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
-                            component.game.add_action(component.game.actions.Destroy(component.id))'''
 
 class HealthBarSystem(System):
     def __init__(self):

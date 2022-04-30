@@ -1,7 +1,7 @@
 import random
 from pygame.math import Vector2
 
-def spawn_particles(component, amount, particles, scale_range, rotation_range):
+def spawn_particles(component, amount, particles, scale_range, speed_range, rotation_range, rotational_force_range=[0, 0]):
     game = component.game
     transform = game.get_component(component.id, "transform")
     parent_entity_id = component.collision_id
@@ -15,6 +15,7 @@ def spawn_particles(component, amount, particles, scale_range, rotation_range):
             Vector2(transform.x, transform.y),
             random.uniform(*rotation_range),
             scale,
-            [400, random.randint(100, 300), 0],
+            [max(speed_range), random.uniform(*speed_range), 0],
             decel,
-            random.uniform(3.0, 5.0)))
+            random.uniform(3.0, 5.0),
+            random.uniform(*rotational_force_range)))
