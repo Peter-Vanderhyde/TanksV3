@@ -56,7 +56,7 @@ class Game:
 
         #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
         GM = spatial_hashing.GridManager
-        collision_categories = ["projectiles", "actors", "objects"]
+        collision_categories = settings.COLLISION_CATEGORIES
         self.collision_maps = {}
         for category in collision_categories:
             self.collision_maps[category] = GM(self.collision_grid_width)
@@ -209,11 +209,13 @@ if __name__ == "__main__":
 
     game.update_images(load_images())
     id = game.get_unique_id()
-    game.add_action(actions.SpawnPlayer(id, Vector2(300, 300), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+    game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
     enemy_id = game.get_unique_id()
     game.add_action(actions.SpawnEnemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.StartFiringBarrels(enemy_id))
+
+    helpers.spawn_shapes(game, 30, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
     game.action_handler.handle_actions()
 

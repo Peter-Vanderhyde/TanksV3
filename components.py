@@ -14,14 +14,14 @@ DEFINITIONS
 (Use <component>.activate? to see args)
 
 Transform: (x, y, rotation, scale)
-Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
+Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], rotational_force, acceleration, deceleration, friction, transform_component, rotational_friction=True)
 Graphics: (layer-(0 is the bottom layer), images: [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)], transform_component)
 Controller: (controller_class)
 Enemy_Controller: (TBD)
 Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
 Barrel_Manager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
 Life_Timer: (start_time, duration)
-Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'objects'], transform_component)
+Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes'], transform_component)
 
 '''
 
@@ -478,7 +478,7 @@ class ColliderSystem(System):
                                     scale=[1, 2],
                                     speed=[50, 900],
                                     spin_rate=[10, 50])
-                        elif categs == ("projectiles", "projectiles"):
+                        elif categs == ("projectiles", "projectiles") or categs == ("projectiles", "shapes"):
                             particle_num = 6
                             game.helpers.spawn_particles(component, particle_num,
                                 ["particle_2", "particle_3"],
@@ -505,11 +505,12 @@ class HealthBarSystem(System):
                     transform.y + component.offset.y - game.camera.corner.y)
                 health = game.get_property(component.id, "health")
                 max_health = game.get_property(component.id, "max health")
-                p = health / max_health
-                width = p * component.width
-                pygame.draw.rect(game.screen, game.colors.black, rect, 0, 2)
-                width = p * (component.width - 2)
-                pygame.draw.rect(game.screen, game.colors.green, ((rect.topleft[0] + 1, rect.topleft[1] + 1), (width, component.height - 2)), 0, 2)
+                if health < max_health:
+                    p = health / max_health
+                    width = p * component.width
+                    pygame.draw.rect(game.screen, game.colors.black, rect, 0, 2)
+                    width = p * (component.width - 2)
+                    pygame.draw.rect(game.screen, game.colors.green, ((rect.topleft[0] + 1, rect.topleft[1] + 1), (width, component.height - 2)), 0, 2)
 
 
 transform_sys = TransformSystem()

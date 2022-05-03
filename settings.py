@@ -17,8 +17,11 @@ ASSETS = (
     ("particle_2_enemy", True, white),
     ("particle_2_player", True, white),
     ("particle_3_enemy", True, white),
-    ("particle_3_player", True, white)
+    ("particle_3_player", True, white),
+    ("square_small", True)
 )
+
+COLLISION_CATEGORIES = ["projectiles", "actors", "shapes"]
 
 # Settings
 PLAYER_MAX_SPEED = 300

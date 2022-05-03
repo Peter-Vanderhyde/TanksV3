@@ -186,8 +186,27 @@ class SpawnBullet(Action):
         game.add_component(self.bullet_id, "physics", self.angle, (self.speed, self.speed, self.speed), self.rotational_force, 1, 1, 0, game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "life timer", time.time(), 3)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles"], game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles", "shapes"], game.get_component(self.bullet_id, "transform"))
         game.add_property(self.bullet_id, "damage", game.get_property(self.owner_id, "damage"))
+
+class SpawnShape(Action):
+    def __init__(self, shape_id, spawn_point, rotation, scale, xp):
+        super().__init__(None)
+        self.shape_id = shape_id
+        self.spawn_point = spawn_point
+        self.rotation = rotation
+        self.scale = scale
+        self.xp = xp
+    
+    def execute_action(self, game):
+        game.create_entity(self.shape_id)
+        game.add_component(self.shape_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
+        game.add_component(self.shape_id, "graphics", 0, [(game.images["square_small"], Vector2(0, 0), 0, 1)], game.get_component(self.shape_id, "transform"))
+        game.add_component(self.shape_id, "physics", self.rotation, (0, 0, 0), 0, 1, 0.7, settings.PARTICLE_FRICTION, game.get_component(self.shape_id, "transform"))
+        # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
+        game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", ["projectiles"], game.get_component(self.shape_id, "transform"))
+        game.add_property(self.shape_id, "xp", self.xp)
+        game.add_property(self.shape_id, "health", 30)
 
 class SpawnParticle(Action):
     def __init__(self, particle_id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime, rotational_force=0, rotation_friction=True, friction=settings.PARTICLE_FRICTION):
@@ -210,7 +229,6 @@ class SpawnParticle(Action):
         game.add_component(self.particle_id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.particle_id, "transform"))
         game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, self.friction, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
         game.add_component(self.particle_id, "life timer", time.time(), self.lifetime)
-        game.add_component(self.particle_id, "collider", self.particle_id, 2, Vector2(0, 0), "objects", [], game.get_component(self.particle_id, "transform"))
 
 class StartFiringBarrels(Action):
     def __init__(self, id):
