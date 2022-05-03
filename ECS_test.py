@@ -240,7 +240,6 @@ if __name__ == "__main__":
             game.action_handler.handle_actions()
             game.accumulator -= game.dt
         
-        
         screen.fill(colors.white)
         game.camera.draw_grid()
         components.graphics_sys.update()

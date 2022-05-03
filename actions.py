@@ -190,7 +190,7 @@ class SpawnBullet(Action):
         game.add_property(self.bullet_id, "damage", game.get_property(self.owner_id, "damage"))
 
 class SpawnParticle(Action):
-    def __init__(self, particle_id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime, rotational_force=0, rotation_friction=True):
+    def __init__(self, particle_id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime, rotational_force=0, rotation_friction=True, friction=settings.PARTICLE_FRICTION):
         super().__init__(None)
         self.particle_id = particle_id
         self.image_string = image_string
@@ -202,12 +202,13 @@ class SpawnParticle(Action):
         self.lifetime = lifetime
         self.rotational_force = rotational_force
         self.rotation_friction = rotation_friction
+        self.friction = friction
     
     def execute_action(self, game):
         game.create_entity(self.particle_id)
         game.add_component(self.particle_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.particle_id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.particle_id, "transform"))
-        game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, settings.PARTICLE_FRICTION, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
+        game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, self.friction, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
         game.add_component(self.particle_id, "life timer", time.time(), self.lifetime)
         game.add_component(self.particle_id, "collider", self.particle_id, 2, Vector2(0, 0), "objects", [], game.get_component(self.particle_id, "transform"))
 

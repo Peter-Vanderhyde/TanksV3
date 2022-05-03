@@ -454,12 +454,15 @@ class ColliderSystem(System):
                         categs = (component.collision_category, other_collider.collision_category)
                         if categs == ("projectiles", "actors"):
                             particle_num = 6
-                            game.helpers.spawn_particles(component, particle_num,
+                            game.helpers.spawn_particles(component,
+                                particle_num,
                                 ["particle_2", "particle_3"],
-                                [1, 1],
-                                [100, 200],
-                                [0, 360],
-                                rotational_force_range=[10, 20])
+                                lifetime=[3, 5],
+                                spawn_point=Vector2(transform.x, transform.y),
+                                rotation=[0, 360],
+                                scale=1,
+                                speed=[100, 200],
+                                spin_rate=[10, 20])
                             damage = game.get_property(component.id, "damage")
                             game.add_action(game.actions.Damage(collided_with_id, damage))
                             game.add_action(game.actions.Destroy(component.id))
@@ -467,20 +470,24 @@ class ColliderSystem(System):
                                 game.add_action(game.actions.Destroy(other_collider.id))
                                 game.add_action(game.actions.FocusCamera(component.collision_id))
                                 game.helpers.spawn_particles(other_collider,
-                                    20,
+                                    50,
                                     ["particle_2", "particle_3"],
-                                    [1, 2],
-                                    [200, 900],
-                                    [0, 360],
-                                    rotational_force_range=[10, 50])
+                                    lifetime=[5, 10],
+                                    spawn_point=Vector2(transform.x, transform.y),
+                                    rotation=[0, 360],
+                                    scale=[1, 2],
+                                    speed=[50, 900],
+                                    spin_rate=[10, 50])
                         elif categs == ("projectiles", "projectiles"):
                             particle_num = 6
                             game.helpers.spawn_particles(component, particle_num,
                                 ["particle_2", "particle_3"],
-                                [1, 1],
-                                [100, 200],
-                                [transform.rotation - 40, transform.rotation + 40],
-                                rotational_force_range=[10, 20])
+                                lifetime=[3, 5],
+                                spawn_point=Vector2(transform.x, transform.y),
+                                rotation=[transform.rotation - 40, transform.rotation + 40],
+                                scale=1,
+                                speed=[100, 200],
+                                spin_rate=[10, 20])
                             game.add_action(game.actions.Destroy(component.id))
 
 class HealthBarSystem(System):
