@@ -8,10 +8,10 @@ IMAGE_PATH = "Images/"
 # [<name>, <alpha>, <colorkey>]
 ASSETS = (
     ("barrel", True, white),
-    ("enemy_body", True, white),
-    ("enemy_bullet", True, white),
-    ("player_body", True, white),
-    ("player_bullet", True, white),
+    ("body_enemy", True, white),
+    ("bullet_enemy", True, white),
+    ("body_player", True, white),
+    ("bullet_player", True, white),
     ("particle_enemy", True, white),
     ("particle_player", True, white),
     ("particle_2_enemy", True, white),
@@ -20,6 +20,13 @@ ASSETS = (
     ("particle_3_player", True, white),
     ("square_small", True)
 )
+
+PARTICLES = {
+    'body_enemy': ['particle_enemy', 'particle_2_enemy'],
+    'bullet_enemy': ['particle_2_enemy', 'particle_3_enemy'],
+    'body_player': ['particle_player', 'particle_2_player'],
+    'bullet_player': ['particle_2_player', 'particle_3_player']
+}
 
 COLLISION_CATEGORIES = ["projectiles", "actors", "shapes"]
 

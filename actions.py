@@ -121,14 +121,14 @@ class SpawnPlayer(Action):
         game.add_component(self.player_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.player_id, "graphics", 1, barrels + [(game.images["player_body"], Vector2(0, 0), 0, 1)], game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "graphics", 1, barrels + [(game.images["body_player"], Vector2(0, 0), 0, 1)], game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "controller", game.components.PlayerController(game, self.player_id, settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform")))
         # [last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.player_id, "barrel manager", barrels, False, "player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.player_id, "collider", self.player_id, 21, Vector2(0, 0), "actors", [], game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "collider", self.player_id, 21, Vector2(0, 0), "actors", [], "body_player", game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.player_id, "transform"))
 
 class SpawnEnemy(Action):
@@ -156,18 +156,18 @@ class SpawnEnemy(Action):
         game.add_component(self.enemy_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.enemy_id, "graphics", 1, barrels + [(game.images["enemy_body"], Vector2(0, 0), 0, 1)], game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "graphics", 1, barrels + [(game.images["body_enemy"], Vector2(0, 0), 0, 1)], game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "controller", game.components.EnemyController(game, self.enemy_id, game.get_component(self.enemy_id, "transform")))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.enemy_id, "barrel manager", barrels, False, "enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.enemy_id, "collider", self.enemy_id, 21, Vector2(0, 0), "actors", [], game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "collider", self.enemy_id, 21, Vector2(0, 0), "actors", [], "body_enemy", game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.enemy_id, "transform"))
 
 class SpawnBullet(Action):
-    def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, owner_string, rotational_force=0):
+    def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, projectile_name, rotational_force=0):
         super().__init__(None)
         self.bullet_id = bullet_id
         self.owner_id = owner_id
@@ -176,35 +176,37 @@ class SpawnBullet(Action):
         self.scale = scale
         self.angle = angle
         self.speed = speed
-        self.owner_string = owner_string
+        self.projectile_name = projectile_name
         self.rotational_force = rotational_force
     
     def execute_action(self, game):
         game.create_entity(self.bullet_id)
         game.add_component(self.bullet_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.owner_string + "_bullet"], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.projectile_name], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "physics", self.angle, (self.speed, self.speed, self.speed), self.rotational_force, 1, 1, 0, game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "life timer", time.time(), 3)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles", "shapes"], game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles", "shapes"], self.projectile_name, game.get_component(self.bullet_id, "transform"))
         game.add_property(self.bullet_id, "damage", game.get_property(self.owner_id, "damage"))
 
 class SpawnShape(Action):
-    def __init__(self, shape_id, spawn_point, rotation, scale, xp):
+    def __init__(self, shape_id, spawn_point, rotation, scale, xp, spin_rate=0, spin_friction=True):
         super().__init__(None)
         self.shape_id = shape_id
         self.spawn_point = spawn_point
         self.rotation = rotation
         self.scale = scale
         self.xp = xp
+        self.spin_rate = spin_rate
+        self.spin_friction = spin_friction
     
     def execute_action(self, game):
         game.create_entity(self.shape_id)
         game.add_component(self.shape_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.shape_id, "graphics", 0, [(game.images["square_small"], Vector2(0, 0), 0, 1)], game.get_component(self.shape_id, "transform"))
-        game.add_component(self.shape_id, "physics", self.rotation, (0, 0, 0), 0, 1, 0.7, settings.PARTICLE_FRICTION, game.get_component(self.shape_id, "transform"))
+        game.add_component(self.shape_id, "physics", self.rotation, (0, 0, 0), self.spin_rate, 1, 0.7, settings.PARTICLE_FRICTION, game.get_component(self.shape_id, "transform"), self.spin_friction)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", ["projectiles"], game.get_component(self.shape_id, "transform"))
+        game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", ["projectiles"], "", game.get_component(self.shape_id, "transform"))
         game.add_property(self.shape_id, "xp", self.xp)
         game.add_property(self.shape_id, "health", 30)
 

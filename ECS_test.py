@@ -215,7 +215,7 @@ if __name__ == "__main__":
     game.add_action(actions.SpawnEnemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.StartFiringBarrels(enemy_id))
 
-    helpers.spawn_shapes(game, 30, [Vector2(-1000, -1000), Vector2(1000, 1000)])
+    helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
     game.action_handler.handle_actions()
 

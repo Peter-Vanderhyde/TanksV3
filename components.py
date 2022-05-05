@@ -157,13 +157,13 @@ class BarrelManager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, barrels, shooting, owner_string, graphics_component, transform_component):
+    def activate(self, id, barrels, shooting, projectile_name, graphics_component, transform_component):
         self.id = id
         # barrels = [[last_shot, cooldown, image_index], [<next barrel>]]
         # NOTE: reference each barrel in the order that they should be drawn
         self.barrels = barrels
         self.shooting = shooting
-        self.owner_string = owner_string
+        self.projectile_name = projectile_name
         self.graphics_component = graphics_component
         self.transform_component = transform_component
 
@@ -180,7 +180,7 @@ class Collider(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, transform_component):
+    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, particle_source_name, transform_component):
         self.id = id
         self.collision_id = collision_id
         # This is the id of the actual parent entity this collider is connected
@@ -194,6 +194,7 @@ class Collider(Component):
         self.collidable_categories = collidable_categories
         # This is a list of all of the collision categories that this collider can collide
         # with. Any colliders not under these categories will be ignored when checking collisions
+        self.particle_source_name = particle_source_name
         self.transform_component = transform_component
         self.collision_cells = set()
 
@@ -384,7 +385,7 @@ class BarrelManagerSystem(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
+                            component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.projectile_name))
 
 class LifeTimerSystem(System):
     def __init__(self):
@@ -456,7 +457,7 @@ class ColliderSystem(System):
                             particle_num = 6
                             game.helpers.spawn_particles(component,
                                 particle_num,
-                                ["particle_2", "particle_3"],
+                                component.particle_source_name,
                                 lifetime=[3, 5],
                                 spawn_point=Vector2(transform.x, transform.y),
                                 rotation=[0, 360],
@@ -471,7 +472,7 @@ class ColliderSystem(System):
                                 game.add_action(game.actions.FocusCamera(component.collision_id))
                                 game.helpers.spawn_particles(other_collider,
                                     50,
-                                    ["particle_2", "particle_3"],
+                                    other_collider.particle_source_name,
                                     lifetime=[5, 10],
                                     spawn_point=Vector2(transform.x, transform.y),
                                     rotation=[0, 360],
@@ -481,7 +482,7 @@ class ColliderSystem(System):
                         elif categs == ("projectiles", "projectiles") or categs == ("projectiles", "shapes"):
                             particle_num = 6
                             game.helpers.spawn_particles(component, particle_num,
-                                ["particle_2", "particle_3"],
+                                component.particle_source_name,
                                 lifetime=[3, 5],
                                 spawn_point=Vector2(transform.x, transform.y),
                                 rotation=[transform.rotation - 40, transform.rotation + 40],
