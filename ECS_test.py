@@ -3,6 +3,7 @@ import time
 import components
 import actions
 import colors
+import random
 import settings
 import spatial_hashing
 import helpers
@@ -32,37 +33,35 @@ def load_images():
 
 class Game:
     def __init__(self, screen, collision_grid_width):
-        self.screen = screen
-        self.collision_grid_width = collision_grid_width
-        self.components = components
         self.actions = actions
         self.colors = colors
         self.helpers = helpers
+        self.components = components
+        #TODO Fix this action controller system at some point
+        self.action_handler = actions.ActionHandler(self, components.controller_sys)
+        self.screen = screen
+
+        self.collision_grid_width = collision_grid_width
+
         self.images = {}
+        self.entities = {}
+        self.entity_props = {}
+        self.living_entities = 0
+        self.last_id = 0
 
         self.dt = 0.01
         self.last_time = time.time()
         self.accumulator = 0.0
 
-        self.entities = {}
-        self.living_entities = 0
-        self.last_id = 0
-
-        #TODO Fix this action controller system at some point
-        self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
 
-        self.entity_props = {}
-
-        #self.collision_tree = q_tree.Quad_Tree(Vector2(-1000000, -1000000), Vector2(1000000, 1000000))
         GM = spatial_hashing.GridManager
-        collision_categories = settings.COLLISION_CATEGORIES
         self.collision_maps = {}
-        for category in collision_categories:
+        for category in settings.COLLISION_CATEGORIES:
             self.collision_maps[category] = GM(self.collision_grid_width)
     
     def get_unique_id(self):
-        """Returns an int that's guaranteed to be unique."""
+        """Returns an int that's unique each time it's called"""
 
         self.last_id += 1
         return self.last_id - 1
@@ -73,16 +72,18 @@ class Game:
         return entity_id in self.entities
     
     def create_entity(self, entity_id):
-        """Adds a new id to the list of entities without any components yet."""
+        """Adds a new id to the list of entities without any components yet"""
 
         # Create [-1, -1, -1, etc] because we don't know what components it will have
         component_indexes = [-1] * len(components.system_index)
-        # Each entity is just this list of component indexes associated with an id key
+        # Each entity is just an id number connected to a list of component indexes
         self.entities[entity_id] = component_indexes
         self.living_entities += 1
         self.entity_props[entity_id] = {}
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
+        """Changes the value for the given component in that entity's list of
+        component indexes from -1 to whatever the next open spot is"""
 
         index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
         self.entities[entity_id][components.component_index[component_name]] = index
@@ -211,9 +212,10 @@ if __name__ == "__main__":
     id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
-    enemy_id = game.get_unique_id()
-    game.add_action(actions.SpawnEnemy(enemy_id, Vector2(400, 500), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.StartFiringBarrels(enemy_id))
+    for i in range(10):
+        enemy_id = game.get_unique_id()
+        game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-500, 500), random.randint(-500, 500)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+        game.add_action(actions.StartFiringBarrels(enemy_id))
 
     helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 

@@ -254,7 +254,10 @@ class FocusCamera(Action):
         self.snap = snap
     
     def execute_action(self, game):
-        game.camera.set_target(self.id, self.snap)
+        if game.is_alive(self.id):
+            game.camera.set_target(self.id, self.snap)
+        else:
+            game.camera.clear_target()
 
 class PositionCamera(Action):
     def __init__(self, position):
@@ -265,12 +268,15 @@ class PositionCamera(Action):
         game.camera.set_position(self.position)
 
 class Destroy(Action):
-    def __init__(self, id):
+    def __init__(self, id, change_focus=None):
         super().__init__(id)
+        self.change_focus = change_focus
     
     def execute_action(self, game):
         game.destroy_entity(self.id)
-        if game.camera.target_id == self.id:
+        if self.change_focus != None:
+            game.add_action(game.actions.FocusCamera(self.change_focus))
+        elif game.camera.target_id == self.id:
             game.camera.clear_target()
 
 class Damage(Action):

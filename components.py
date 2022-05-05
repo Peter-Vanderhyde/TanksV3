@@ -1,7 +1,6 @@
 import pygame
 import math
 import time
-import random
 import settings
 import numpy as np
 from pygame.math import Vector2
@@ -468,8 +467,10 @@ class ColliderSystem(System):
                             game.add_action(game.actions.Damage(collided_with_id, damage))
                             game.add_action(game.actions.Destroy(component.id))
                             if game.get_property(other_collider.id, "health") - damage <= 0:
-                                game.add_action(game.actions.Destroy(other_collider.id))
-                                game.add_action(game.actions.FocusCamera(component.collision_id))
+                                if game.camera.target_id == other_collider.collision_id:
+                                    game.add_action(game.actions.Destroy(other_collider.id, change_focus=component.collision_id))
+                                else:
+                                    game.add_action(game.actions.Destroy(other_collider.id))
                                 game.helpers.spawn_particles(other_collider,
                                     50,
                                     other_collider.particle_source_name,
