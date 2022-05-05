@@ -1,7 +1,6 @@
 import pygame
 import math
 import time
-import random
 import settings
 import numpy as np
 from pygame.math import Vector2
@@ -14,19 +13,20 @@ DEFINITIONS
 (Use <component>.activate? to see args)
 
 Transform: (x, y, rotation, scale)
-Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], acceleration, deceleration, friction, transform_component)
+Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], rotational_force, acceleration, deceleration, friction, transform_component, rotational_friction=True)
 Graphics: (layer-(0 is the bottom layer), images: [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)], transform_component)
 Controller: (controller_class)
 Enemy_Controller: (TBD)
 Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
 Barrel_Manager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
 Life_Timer: (start_time, duration)
-Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'objects'], transform_component)
+Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes'], transform_component)
 
 '''
 
 
 class Component:
+
     def __init__(self, game, next_available):
         self.game = game
         self.next_available = next_available
@@ -34,9 +34,11 @@ class Component:
     
     def activate(self):
         """Any information needed by the class is given when the inactive component is 'activated'"""
+
         pass
 
 class Transform(Component):
+
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -48,12 +50,14 @@ class Transform(Component):
         self.scale = scale
 
 class Physics(Component):
+
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, angle, speeds, accel, decel, friction, transform_component):
+    def activate(self, id, angle, speeds, rotational_force, accel, decel, friction, transform_component, rotation_friction=True):
         self.id = id
         self.max_speed, current_speed, target_speed = speeds
+        self.rotational_force = rotational_force
         self.accel = accel
         self.decel = decel
         self.friction = friction
@@ -62,6 +66,7 @@ class Physics(Component):
         self.target_velocity = Vector2()
         self.target_velocity.from_polar((target_speed, angle))
         self.transform_component = transform_component
+        self.rotation_friction = rotation_friction
 
 class Graphics(Component):
     def __init__(self, game, next_available):
@@ -84,7 +89,7 @@ class Controller(Component):
         self.id = id
         self.controller_class = controller_class
 
-class Enemy_Controller:
+class EnemyController:
     def __init__(self, game, id, transform_component):
         self.game = game
         self.id = id
@@ -96,7 +101,7 @@ class Enemy_Controller:
     def get_action(self, event):
         pass
 
-class Player_Controller:
+class PlayerController:
     def __init__(self, game, id, move_keys, transform_component):
         self.game = game
         self.id = id
@@ -124,44 +129,44 @@ class Player_Controller:
             if event.key == K_ESCAPE:
                 return action.Quit()
             elif event.key == self.move_keys["left"]:
-                return action.Move_Left(self.id, True)
+                return action.MoveLeft(self.id, True)
             elif event.key == self.move_keys["right"]:
-                return action.Move_Right(self.id, True)
+                return action.MoveRight(self.id, True)
             elif event.key == self.move_keys["up"]:
-                return action.Move_Up(self.id, True)
+                return action.MoveUp(self.id, True)
             elif event.key == self.move_keys["down"]:
-                return action.Move_Down(self.id, True)
+                return action.MoveDown(self.id, True)
         elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return action.Move_Left(self.id, False)
+                return action.MoveLeft(self.id, False)
             elif event.key == self.move_keys["right"]:
-                return action.Move_Right(self.id, False)
+                return action.MoveRight(self.id, False)
             elif event.key == self.move_keys["up"]:
-                return action.Move_Up(self.id, False)
+                return action.MoveUp(self.id, False)
             elif event.key == self.move_keys["down"]:
-                return action.Move_Down(self.id, False)
+                return action.MoveDown(self.id, False)
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                return action.Start_Firing_Barrels(self.id)
+                return action.StartFiringBarrels(self.id)
         elif event.type == MOUSEBUTTONUP:
             if event.button == 1:
-                return action.Stop_Firing_Barrels(self.id)
+                return action.StopFiringBarrels(self.id)
 
-class Barrel_Manager(Component):
+class BarrelManager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, barrels, shooting, owner_string, graphics_component, transform_component):
+    def activate(self, id, barrels, shooting, projectile_name, graphics_component, transform_component):
         self.id = id
         # barrels = [[last_shot, cooldown, image_index], [<next barrel>]]
         # NOTE: reference each barrel in the order that they should be drawn
         self.barrels = barrels
         self.shooting = shooting
-        self.owner_string = owner_string
+        self.projectile_name = projectile_name
         self.graphics_component = graphics_component
         self.transform_component = transform_component
 
-class Life_Timer(Component):
+class LifeTimer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -174,30 +179,34 @@ class Collider(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, transform_component):
+    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, particle_source_name, transform_component):
         self.id = id
         self.collision_id = collision_id
+        # This is the id of the actual parent entity this collider is connected
+        # to. This allows easy reference when collisions are detected for changing
+        # health, experience, etc.
         self.radius = radius
         self.offset = offset
         self.collision_category = collision_category
+        # The category that this collider component falls under.
+        # It can only have one.
         self.collidable_categories = collidable_categories
+        # This is a list of all of the collision categories that this collider can collide
+        # with. Any colliders not under these categories will be ignored when checking collisions
+        self.particle_source_name = particle_source_name
         self.transform_component = transform_component
         self.collision_cells = set()
 
-class Properties(Component):
+class HealthBar(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, properties):
+    def activate(self, id, width, height, offset, transform_component):
         self.id = id
-        self.properties_dict = {}
-        [self.properties_dict.setdefault(property) for property in properties]
-    
-    def get(self, property):
-        return self.properties_dict[property]
-    
-    def set(self, property, value):
-        self.properties_dict[property] = value
+        self.width = width
+        self.height = height
+        self.offset = offset
+        self.transform_component = transform_component
 
 class System:
     def __init__(self, component_type):
@@ -247,11 +256,11 @@ class System:
         """Contains whatever code should be run for that component every loop"""
         pass
 
-class Transform_System(System):
+class TransformSystem(System):
     def __init__(self):
         super().__init__(Transform)
 
-class Physics_System(System):
+class PhysicsSystem(System):
     def __init__(self):
         super().__init__(Physics)
     
@@ -267,7 +276,13 @@ class Physics_System(System):
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
 
-class Graphics_System(System):
+                component.transform_component.rotation += component.rotational_force * 10 * dt
+                if component.rotation_friction and component.rotational_force:
+                    v = Vector2(1, 0) * component.rotational_force
+                    v = v.lerp(Vector2(), min(component.rotational_force * 0.05 * dt, 0.05))
+                    component.rotational_force = v.length()
+
+class GraphicsSystem(System):
     def __init__(self):
         super().__init__(Graphics)
         self.layer_indexes = []
@@ -276,6 +291,7 @@ class Graphics_System(System):
     def check_layer_exists(self, layer):
         """Instead of hardcoding the number of graphics layers that I will use, I let it create a new
         layer whenever a higher one is needed. 0 is the bottom layer."""
+
         while self.layers < layer + 1:
             self.layer_indexes.append([])
             self.layers += 1
@@ -306,7 +322,7 @@ class Graphics_System(System):
         except:
             raise Exception("Unable to remove component.")
     
-    def update(self, screen):
+    def update(self):
         for layer in self.layer_indexes:
             for component_index in layer:
                 component = self.components[component_index]
@@ -324,10 +340,10 @@ class Graphics_System(System):
                         width, height = component.last_used_images[index].get_size()
                         camera = component.game.camera
                         offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
-                        screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
+                        component.game.screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
-class Controller_System(System):
+class ControllerSystem(System):
     def __init__(self):
         super().__init__(Controller)
 
@@ -345,9 +361,9 @@ class Controller_System(System):
                 if action is not None:
                     component.game.add_action(action)
 
-class Barrel_Manager_System(System):
+class BarrelManagerSystem(System):
     def __init__(self):
-        super().__init__(Barrel_Manager)
+        super().__init__(BarrelManager)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -368,31 +384,31 @@ class Barrel_Manager_System(System):
                             offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
-                            component.game.add_action(component.game.actions.Spawn_Bullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.owner_string))
+                            component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.projectile_name))
 
-class Life_Timer_System(System):
+class LifeTimerSystem(System):
     def __init__(self):
-        super().__init__(Life_Timer)
+        super().__init__(LifeTimer)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
                 if time.time() - component.start_time >= component.duration:
-                    component.game.destroy_entity(component.id)
+                    component.game.add_action(component.game.actions.Destroy(component.id))
 
-class Collider_System(System):
+class ColliderSystem(System):
     def __init__(self):
         super().__init__(Collider)
     
     def add_component(self, game, *args, **kwargs):
         index = super().add_component(game, *args, **kwargs)
-        self.components[index].game.collision_categories[self.components[index].collision_category].insert_collider(self.components[index])
+        self.components[index].game.collision_maps[self.components[index].collision_category].insert_collider(self.components[index])
         return index
     
     def remove_component(self, index):
         try:
-            self.components[index].game.collision_categories[self.components[index].collision_category].remove_collider(self.components[index])
+            self.components[index].game.collision_maps[self.components[index].collision_category].remove_collider(self.components[index])
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
@@ -413,58 +429,100 @@ class Collider_System(System):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                component.game.collision_categories[component.collision_category].move_collider(component)
+                component.game.collision_maps[component.collision_category].move_collider(component)
         
         # THIS IS A HORRID FUNCTION
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
+                game = component.game
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
-                for category in component.collidable_categories:
-                    for cell in component.collision_cells:
-                        others = component.game.collision_categories[category].contents.get(cell)
-                        if others:
-                            for other_collider in others:
-                                if other_collider.collision_id != component.collision_id:
-                                    other_transform = other_collider.transform_component
-                                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
-                                    if self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
-                                        categs = (component.collision_category, other_collider.collision_category)
-                                        if categs == ("projectiles", "projectiles"):
-                                            particle_num = 6
-                                            for i in range(particle_num):
-                                                particles = ["particle_2", "particle_3"]
-                                                particle = random.randrange(0, len(particles))
-                                                scale = 1 - 0.2 * particle
-                                                decel = (scale - 0.5) / 0.7 * 0.1
-                                                scale = 1
-                                                component.game.add_action(component.game.actions.Spawn_Particle(component.game.get_unique_id(),
-                                                    f"{particles[particle]}_{component.game.get_component(component.collision_id, 'barrel manager').owner_string}",
-                                                    Vector2(transform.x, transform.y),
-                                                    random.uniform(transform.rotation - 40, transform.rotation + 40),
-                                                    scale,
-                                                    [400, random.randint(100, 300), 0],
-                                                    decel,
-                                                    random.uniform(3.0, 5.0)))
-                                            component.game.add_action(component.game.actions.Destroy(component.id))
-                                        '''elif categs == ("projectiles", "actors"):
-                                            tank_physics = component.game.get_component(other_collider.collision_id, "physics")
-                                            tank_physics.velocity += component.game.get_component(component.id, "physics").velocity
-                                            component.game.add_action(component.game.actions.Destroy(component.id))'''
+                colliding_with_set = set().union(*[game.collision_maps[c].contents.get(cell)
+                        for cell in component.collision_cells for c in component.collidable_categories
+                        if game.collision_maps[c].contents.get(cell) != None])
+                # These for loops loop through the categories that the collider is colliding with
+                # and gets the cells of each, ignoring any that are empty (ie None).
+                # It combines the cell sets of all the dictionaries that are in the same cell as itself.
+                colliding_with_set -= {component}
+                # Removes itself from the set so it doesn't collide with itself.
+                for other_collider in colliding_with_set:
+                    other_transform = other_collider.transform_component
+                    other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
+                    if component.collision_id != other_collider.collision_id and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                        collided_with_id = other_collider.collision_id
+                        categs = (component.collision_category, other_collider.collision_category)
+                        if categs == ("projectiles", "actors"):
+                            particle_num = 6
+                            game.helpers.spawn_particles(component,
+                                particle_num,
+                                component.particle_source_name,
+                                lifetime=[3, 5],
+                                spawn_point=Vector2(transform.x, transform.y),
+                                rotation=[0, 360],
+                                scale=1,
+                                speed=[100, 200],
+                                spin_rate=[10, 20])
+                            damage = game.get_property(component.id, "damage")
+                            game.add_action(game.actions.Damage(collided_with_id, damage))
+                            game.add_action(game.actions.Destroy(component.id))
+                            if game.get_property(other_collider.id, "health") - damage <= 0:
+                                if game.camera.target_id == other_collider.collision_id:
+                                    game.add_action(game.actions.Destroy(other_collider.id, change_focus=component.collision_id))
+                                else:
+                                    game.add_action(game.actions.Destroy(other_collider.id))
+                                game.helpers.spawn_particles(other_collider,
+                                    50,
+                                    other_collider.particle_source_name,
+                                    lifetime=[5, 10],
+                                    spawn_point=Vector2(transform.x, transform.y),
+                                    rotation=[0, 360],
+                                    scale=[1, 2],
+                                    speed=[50, 900],
+                                    spin_rate=[10, 50])
+                        elif categs == ("projectiles", "projectiles") or categs == ("projectiles", "shapes"):
+                            particle_num = 6
+                            game.helpers.spawn_particles(component, particle_num,
+                                component.particle_source_name,
+                                lifetime=[3, 5],
+                                spawn_point=Vector2(transform.x, transform.y),
+                                rotation=[transform.rotation - 40, transform.rotation + 40],
+                                scale=1,
+                                speed=[100, 200],
+                                spin_rate=[10, 20])
+                            game.add_action(game.actions.Destroy(component.id))
 
-class Properties_System(System):
+class HealthBarSystem(System):
     def __init__(self):
-        super().__init__(Properties)
+        super().__init__(HealthBar)
+    
+    def update(self):
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
+            if component.id is not None:
+                game = component.game
+                transform = component.transform_component
+                rect = Rect(0, 0, component.width, component.height)
+                rect.center = (transform.x + component.offset.x - game.camera.corner.x,
+                    transform.y + component.offset.y - game.camera.corner.y)
+                health = game.get_property(component.id, "health")
+                max_health = game.get_property(component.id, "max health")
+                if health < max_health:
+                    p = health / max_health
+                    width = p * component.width
+                    pygame.draw.rect(game.screen, game.colors.black, rect, 0, 2)
+                    width = p * (component.width - 2)
+                    pygame.draw.rect(game.screen, game.colors.green, ((rect.topleft[0] + 1, rect.topleft[1] + 1), (width, component.height - 2)), 0, 2)
 
-transform_sys = Transform_System()
-physics_sys = Physics_System()
-graphics_sys = Graphics_System()
-controller_sys = Controller_System()
-barrel_manager_sys = Barrel_Manager_System()
-life_timer_sys = Life_Timer_System()
-collider_sys = Collider_System()
-properties_sys = Properties_System()
+
+transform_sys = TransformSystem()
+physics_sys = PhysicsSystem()
+graphics_sys = GraphicsSystem()
+controller_sys = ControllerSystem()
+barrel_manager_sys = BarrelManagerSystem()
+life_timer_sys = LifeTimerSystem()
+collider_sys = ColliderSystem()
+health_bar_sys = HealthBarSystem()
 
 systems = {
     "transform":transform_sys,
@@ -474,9 +532,11 @@ systems = {
     "barrel manager":barrel_manager_sys,
     "life timer":life_timer_sys,
     "collider":collider_sys,
-    "properties":properties_sys
+    "health bar":health_bar_sys
 }
-component_index = {} # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+component_index = {}
+# Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+
 for i, component in enumerate(systems):
     component_index[component] = i
 
