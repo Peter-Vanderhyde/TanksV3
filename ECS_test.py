@@ -212,7 +212,7 @@ if __name__ == "__main__":
     id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
-    for i in range(10):
+    for i in range(1):
         enemy_id = game.get_unique_id()
         game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-500, 500), random.randint(-500, 500)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
         game.add_action(actions.StartFiringBarrels(enemy_id))
