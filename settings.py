@@ -4,8 +4,9 @@ import pygame
 pygame.init()
 monitor = pygame.display.Info()
 SCREEN_SIZE = (monitor.current_w - 50, monitor.current_h - 75)
-IMAGE_PATH = "Images/"
-# [<name>, <alpha>, <colorkey>]
+IMAGE_PATH = "images/"
+ANIMATION_PATH = "animations/"
+# (<name>, <alpha>, <colorkey>)
 ASSETS = (
     ("barrel", True, white),
     ("body_enemy", True, white),

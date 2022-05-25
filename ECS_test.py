@@ -1,5 +1,6 @@
 import pygame
 import time
+import controllers
 import components
 import actions
 import colors
@@ -7,6 +8,8 @@ import random
 import settings
 import spatial_hashing
 import helpers
+from pathlib import Path
+import os
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
@@ -30,20 +33,35 @@ def load_images():
     
     return d
 
+def load_animation_images():
+    animation_images = {}
+    for path in Path(settings.ANIMATION_PATH).rglob("*.png"):
+        path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
+        # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
+        # animation, then the image name
+        image = pygame.image.load(path).convert_alpha()
+        image.set_colorkey((255, 255, 255))
+        animation_images.update({path_string:image})
+    
+    return animation_images
 
 class Game:
     def __init__(self, screen, collision_grid_width):
+        self.screen = screen
+        self.collision_grid_width = collision_grid_width
+
         self.actions = actions
         self.colors = colors
         self.helpers = helpers
+        self.controllers = controllers
         self.components = components
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self, components.controller_sys)
-        self.screen = screen
-
-        self.collision_grid_width = collision_grid_width
+        self.camera = Camera(self)
+        GM = spatial_hashing.GridManager
 
         self.images = {}
+        self.animation_images = {}
         self.entities = {}
         self.entity_props = {}
         self.living_entities = 0
@@ -53,9 +71,6 @@ class Game:
         self.last_time = time.time()
         self.accumulator = 0.0
 
-        self.camera = Camera(self)
-
-        GM = spatial_hashing.GridManager
         self.collision_maps = {}
         for category in settings.COLLISION_CATEGORIES:
             self.collision_maps[category] = GM(self.collision_grid_width)
@@ -132,10 +147,12 @@ class Game:
 
         self.action_handler.add_action(action)
     
-    def update_images(self, new_images_dict):
-        """Takes a dictionary of images and adds it to the dictionary of images."""
+    def update_images(self, new_images_dict, new_anim_images_dict):
+        """Takes a dictionaries of images and adds them to the dictionaries of images
+        and animation_images."""
 
         self.images.update(new_images_dict)
+        self.animation_images.update(new_anim_images_dict)
 
 
 class Camera:
@@ -208,7 +225,8 @@ if __name__ == "__main__":
     game = Game(screen, settings.COLLISION_GRID_WIDTH)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
-    game.update_images(load_images())
+    game.update_images(load_images(), load_animation_images())
+    load_animations()
     id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))

@@ -123,7 +123,7 @@ class SpawnPlayer(Action):
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
         game.add_component(self.player_id, "graphics", 1, barrels + [(game.images["body_player"], Vector2(0, 0), 0, 1)], game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.player_id, "transform"))
-        game.add_component(self.player_id, "controller", game.components.PlayerController(game, self.player_id, settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform")))
+        game.add_component(self.player_id, "controller", "player", settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform"))
         # [last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
         game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
@@ -158,7 +158,7 @@ class SpawnEnemy(Action):
         barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
         game.add_component(self.enemy_id, "graphics", 1, barrels + [(game.images["body_enemy"], Vector2(0, 0), 0, 1)], game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.enemy_id, "transform"))
-        game.add_component(self.enemy_id, "controller", game.components.EnemyController(game, self.enemy_id, game.get_component(self.enemy_id, "transform")))
+        game.add_component(self.enemy_id, "controller", "enemy", game.get_component(self.enemy_id, "transform"))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
         game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
