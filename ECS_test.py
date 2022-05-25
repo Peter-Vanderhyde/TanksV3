@@ -226,7 +226,6 @@ if __name__ == "__main__":
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
     game.update_images(load_images(), load_animation_images())
-    load_animations()
     id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
