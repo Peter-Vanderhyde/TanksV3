@@ -120,13 +120,14 @@ class SpawnPlayer(Action):
 
         game.add_component(self.player_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
-        barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.player_id, "graphics", 1, barrels + [(game.images["body_player"], Vector2(0, 0), 0, 1)], game.get_component(self.player_id, "transform"))
+        barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
+        game.add_component(self.player_id, "graphics", 1, barrels + [[game.images["body_player"], Vector2(0, 0), 0, 1]], game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "animator", "tank", "idle", game.get_component(self.player_id, "graphics"))
         game.add_component(self.player_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "controller", "player", settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform"))
         # [last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"), game.get_component(self.player_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.player_id, "collider", self.player_id, 21, Vector2(0, 0), "actors", [], "body_player", game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.player_id, "transform"))
@@ -155,13 +156,14 @@ class SpawnEnemy(Action):
 
         game.add_component(self.enemy_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
-        barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.enemy_id, "graphics", 1, barrels + [(game.images["body_enemy"], Vector2(0, 0), 0, 1)], game.get_component(self.enemy_id, "transform"))
+        barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
+        game.add_component(self.enemy_id, "graphics", 1, barrels + [[game.images["body_enemy"], Vector2(0, 0), 0, 1]], game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "animator", "tank", "idle", game.get_component(self.enemy_id, "graphics"))
         game.add_component(self.enemy_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "controller", "enemy", game.get_component(self.enemy_id, "transform"))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"), game.get_component(self.enemy_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.enemy_id, "collider", self.enemy_id, 21, Vector2(0, 0), "actors", [], "body_enemy", game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.enemy_id, "transform"))

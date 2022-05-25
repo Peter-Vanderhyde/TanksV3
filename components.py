@@ -76,10 +76,21 @@ class Graphics(Component):
         self.id = id
         self.layer = layer
         self.transform_component = transform_component
-        # images = [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)]
+        # images = [[<name>, <offset_position>, <rotation>, <scale_offset>], [etc.]]
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
+    
+    def switch_image_frame(self, index, new_image):
+        image, offset_vector, rotation_offset, scale_offset = self.images[index]
+        image = new_image
+        ck = image.get_colorkey()
+        width, height = image.get_size()
+        image = pygame.transform.scale(image, (math.ceil(width * self.transform_component.scale * scale_offset), math.ceil(height * self.transform_component.scale * scale_offset)))
+        if ck:
+            image.set_colorkey(ck)
+        self.last_used_images[index] = image
+        self.images[index][0] = image
 
 class Controller(Component):
     def __init__(self, game, next_available):
@@ -94,7 +105,7 @@ class BarrelManager(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, barrels, shooting, projectile_name, graphics_component, transform_component):
+    def activate(self, id, barrels, shooting, projectile_name, graphics_component, transform_component, animator_component):
         self.id = id
         # barrels = [[last_shot, cooldown, image_index], [<next barrel>]]
         # NOTE: reference each barrel in the order that they should be drawn
@@ -103,6 +114,7 @@ class BarrelManager(Component):
         self.projectile_name = projectile_name
         self.graphics_component = graphics_component
         self.transform_component = transform_component
+        self.animator_component = animator_component
 
 class LifeTimer(Component):
     def __init__(self, game, next_available):
@@ -150,10 +162,17 @@ class Animator(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, animation, graphics_component):
+    def activate(self, id, animation_set, current_animation, graphics_component):
         self.id = id
-        self.animation = animation
+        self.animation_set = animation_set
+        self.current_animation = current_animation
         self.graphics_component = graphics_component
+        self.start_time = None
+        self.frame_start_time = None
+        self.playing = False
+        self.images = {}
+        for index, name in enumerate(self.game.animations[animation_set]["indexes"]):
+            self.images.update({name:index})
 
 class System:
     def __init__(self, component_type):
@@ -466,12 +485,28 @@ class AnimatorSystem(System):
         super().__init__(Animator)
     
     def update(self):
-        for i in range(min(self.farthes_component + 1, len(self.components))):
+        for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
                 game = component.game
-                graphics = component.graphics_component
-                animation = component.animation
+                anim_set = component.animation_set
+                curr_anim = component.current_animation
+                animation = game.animations[anim_set][curr_anim]
+                duration = animation["duration"]
+                if component.start_time == None:
+                    if duration != 0:
+                        component.playing = True
+                    component.start_time = time.time()
+                    self.apply_frame(animation["initial_frame"], component)
+    
+    def apply_frame(self, frame, component):
+        graphics = component.graphics_component
+        images = component.images
+        for image, properties in frame.items():
+            for property, value in properties.items():
+                if property == "image":
+                    name = "/".join([component.animation_set, component.current_animation, image])
+                    graphics.switch_image_frame(images[image], component.game.animation_images[f"{name}_{value}"])
 
 
 transform_sys = TransformSystem()
@@ -482,6 +517,7 @@ barrel_manager_sys = BarrelManagerSystem()
 life_timer_sys = LifeTimerSystem()
 collider_sys = ColliderSystem()
 health_bar_sys = HealthBarSystem()
+animator_sys = AnimatorSystem()
 
 systems = {
     "transform":transform_sys,
@@ -491,7 +527,8 @@ systems = {
     "barrel manager":barrel_manager_sys,
     "life timer":life_timer_sys,
     "collider":collider_sys,
-    "health bar":health_bar_sys
+    "health bar":health_bar_sys,
+    "animator":animator_sys
 }
 component_index = {}
 # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}

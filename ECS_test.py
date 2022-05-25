@@ -8,6 +8,7 @@ import random
 import settings
 import spatial_hashing
 import helpers
+import animations
 from pathlib import Path
 import os
 from pygame.locals import *
@@ -55,6 +56,7 @@ class Game:
         self.helpers = helpers
         self.controllers = controllers
         self.components = components
+        self.animations = animations.animations
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
@@ -263,6 +265,7 @@ if __name__ == "__main__":
         
         screen.fill(colors.white)
         game.camera.draw_grid()
+        components.animator_sys.update()
         components.graphics_sys.update()
         components.health_bar_sys.update()
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
