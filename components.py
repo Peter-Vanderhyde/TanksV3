@@ -80,17 +80,10 @@ class Graphics(Component):
         self.images = images
         self.last_rotation = None
         self.last_used_images = [element[0] for element in self.images]
+        self.previous_images = [element[0] for element in self.images]
     
     def switch_image_frame(self, index, new_image):
-        image, offset_vector, rotation_offset, scale_offset = self.images[index]
-        image = new_image
-        ck = image.get_colorkey()
-        width, height = image.get_size()
-        image = pygame.transform.scale(image, (math.ceil(width * self.transform_component.scale * scale_offset), math.ceil(height * self.transform_component.scale * scale_offset)))
-        if ck:
-            image.set_colorkey(ck)
-        self.last_used_images[index] = image
-        self.images[index][0] = image
+        self.images[index][0] = new_image
 
 class Controller(Component):
     def __init__(self, game, next_available):
@@ -162,17 +155,55 @@ class Animator(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, animation_set, current_animation, graphics_component):
+    def activate(self, id, animation_set, current_animations, graphics_component):
         self.id = id
-        self.animation_set = animation_set
-        self.current_animation = current_animation
+        self.animation_set = ""
+        self.current_animations = []
+        self.animation_states = []
         self.graphics_component = graphics_component
+        self.current_frame = None
         self.start_time = None
         self.frame_start_time = None
-        self.playing = False
+        self.images = {}
+        self.set_animation_set(animation_set)
+        for animation in current_animations:
+            self.add_animation_state(animation)
+    
+    def add_animation_state(self, animation):
+        if animation in self.current_animations:
+            self.stop(animation)
+        self.current_animations.append(animation)
+        self.animation_states.append({
+            "animation":animation,
+            "current_frame":None,
+            "start_time":None,
+            "frame_start_time":None
+        })
+    
+    def get_state_of_animation(self, animation):
+        """Gives you the animation, current_frame, start_time, and frame_start_time of an animation"""
+
+        try:
+            index = self.current_animations.index[animation]
+            return self.animation_states[index]
+        except ValueError:
+            raise ValueError("Tried to get state of animation not in Animator!")
+    
+    def set_animation_set(self, animation_set):
+        self.animation_set = animation_set
         self.images = {}
         for index, name in enumerate(self.game.animations[animation_set]["indexes"]):
             self.images.update({name:index})
+        self.current_animations = []
+        self.animation_states = []
+    
+    def play(self, animation):
+        self.add_animation_state(animation)
+    
+    def stop(self, animation):
+        index = self.current_animations.index(animation)
+        self.current_animations.remove(animation)
+        self.animation_states.pop(index)
 
 class System:
     def __init__(self, component_type):
@@ -295,7 +326,7 @@ class GraphicsSystem(System):
                 if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
                     for index, element in enumerate(component.images):
                         image, offset_vector, rotation_offset, scale_offset = element
-                        if component.transform_component.rotation != component.last_rotation:
+                        if component.transform_component.rotation != component.last_rotation or component.images[index][0] != component.previous_images[index]:
                             ck = image.get_colorkey()
                             width, height = image.get_size()
                             image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale * scale_offset), math.ceil(height * component.transform_component.scale * scale_offset)))
@@ -303,6 +334,7 @@ class GraphicsSystem(System):
                             if ck:
                                 image.set_colorkey(ck)
                             component.last_used_images[index] = image
+                            component.previous_images[index] = component.images[index][0]
                         width, height = component.last_used_images[index].get_size()
                         camera = component.game.camera
                         offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
@@ -343,7 +375,7 @@ class BarrelManagerSystem(System):
                         scale = component.transform_component.scale * scale_offset
                         if time.time() - last_shot >= cooldown:
                             barrel[0] = time.time()
-                            barrel_length = settings.BARREL_LENGTH * scale
+                            barrel_length = settings.BARREL_LENGTH - 10 * scale
                             barrel_angle = component.transform_component.rotation + rotation_offset
                             barrel_end = Vector2()
                             barrel_end.from_polar((barrel_length, barrel_angle))
@@ -351,6 +383,7 @@ class BarrelManagerSystem(System):
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
                             component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.projectile_name))
+                            component.animator_component.play("shoot barrel")
 
 class LifeTimerSystem(System):
     def __init__(self):
@@ -490,23 +523,66 @@ class AnimatorSystem(System):
             if component.id is not None:
                 game = component.game
                 anim_set = component.animation_set
-                curr_anim = component.current_animation
-                animation = game.animations[anim_set][curr_anim]
-                duration = animation["duration"]
-                if component.start_time == None:
-                    if duration != 0:
-                        component.playing = True
-                    component.start_time = time.time()
-                    self.apply_frame(animation["initial_frame"], component)
+                for current_animation, animation_state in zip(component.current_animations, component.animation_states):
+                    animation_properties = game.animations[anim_set][current_animation]
+                    duration = animation_properties["duration"]
+                    state = animation_state
+                    if state["start_time"] == None:
+                        state["start_time"] = time.time()
+                        state["frame_start_time"] = time.time()
+                        state["current_frame"] = 0
+                        self.apply_frame(component, state, animation_properties["initial_frame"])
+                        if duration == 0:
+                            self.end_animation(component, state)
+                    elif duration > 0:
+                        frame = animation_properties["frames"][state["current_frame"]]
+                        frame_duration = duration * frame["delay"]
+                        elapsed = time.time() - state["frame_start_time"]
+                        if time.time() - state["start_time"] >= duration:
+                            self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
+                            self.end_animation(component, state)
+                            continue
+                        elif elapsed >= frame_duration:
+                            if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
+                                frame = animation_properties["frames"][state["current_frame"]]
+                                frame_duration = duration * frame["delay"]
+                                elapsed = time.time() - state["frame_start_time"]
+                                if time.time() - state["start_time"] >= duration:
+                                    self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
+                                    self.end_animation(component, state)
+                                    continue
+                            else:
+                                continue
+                        
+                        elapsed_percent = elapsed / frame_duration
+                        self.iterate_frame(component, frame, elapsed_percent)
     
-    def apply_frame(self, frame, component):
+    def apply_frame(self, component, state, frame):
         graphics = component.graphics_component
         images = component.images
         for image, properties in frame.items():
             for property, value in properties.items():
                 if property == "image":
-                    name = "/".join([component.animation_set, component.current_animation, image])
+                    name = "/".join([component.animation_set, state["animation"], image])
                     graphics.switch_image_frame(images[image], component.game.animation_images[f"{name}_{value}"])
+
+    def iterate_frame(self, component, frame, percent):
+        pass
+
+    def go_to_next_frame(self, component, state, animation_properties, frame, frame_duration, elapsed):
+        self.apply_frame(component, state, frame["properties"])
+        if state["current_frame"] + 1 == len(animation_properties["frames"]):
+            self.end_animation(component, state)
+            return False
+        else:
+            past = elapsed - frame_duration
+            state["current_frame"] += 1
+            state["frame_start_time"] = time.time() - past
+            return True
+    
+    def end_animation(self, component, state):
+        component.current_animations.remove(state["animation"])
+        component.animation_states.remove(state)
 
 
 transform_sys = TransformSystem()

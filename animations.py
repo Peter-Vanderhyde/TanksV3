@@ -1,6 +1,6 @@
 tank_animation = {
     "indexes":["barrel", "body"],
-    "idle":{
+    "idle barrel":{
         "duration":0,
         "initial_frame":{
             "barrel":{
@@ -8,7 +8,7 @@ tank_animation = {
             }
         }
     },
-    "shoot_bullet":{
+    "shoot barrel":{
         "duration":0.2,
         "initial_frame":{
             "barrel":{
