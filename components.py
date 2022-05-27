@@ -533,14 +533,14 @@ class AnimatorSystem(System):
                         state["current_frame"] = 0
                         self.apply_frame(component, state, animation_properties["initial_frame"])
                         if duration == 0:
-                            self.end_animation(component, state)
+                            self.end_animation(component, state, animation_properties["loop"])
                     elif duration > 0:
                         frame = animation_properties["frames"][state["current_frame"]]
                         frame_duration = duration * frame["delay"]
                         elapsed = time.time() - state["frame_start_time"]
                         if time.time() - state["start_time"] >= duration:
                             self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
-                            self.end_animation(component, state)
+                            self.end_animation(component, state, animation_properties["loop"])
                             continue
                         elif elapsed >= frame_duration:
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
@@ -549,7 +549,7 @@ class AnimatorSystem(System):
                                 elapsed = time.time() - state["frame_start_time"]
                                 if time.time() - state["start_time"] >= duration:
                                     self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
-                                    self.end_animation(component, state)
+                                    self.end_animation(component, state, animation_properties["loop"])
                                     continue
                             else:
                                 continue
@@ -580,9 +580,12 @@ class AnimatorSystem(System):
             state["frame_start_time"] = time.time() - past
             return True
     
-    def end_animation(self, component, state):
-        component.current_animations.remove(state["animation"])
-        component.animation_states.remove(state)
+    def end_animation(self, component, state, loop):
+        if not loop:
+            component.current_animations.remove(state["animation"])
+            component.animation_states.remove(state)
+        else:
+            state["start_time"] = None
 
 
 transform_sys = TransformSystem()
