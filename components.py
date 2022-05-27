@@ -449,47 +449,8 @@ class ColliderSystem(System):
                     other_transform = other_collider.transform_component
                     other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
                     if component.collision_id != other_collider.collision_id and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
-                        collided_with_id = other_collider.collision_id
-                        categs = (component.collision_category, other_collider.collision_category)
-                        if categs == ("projectiles", "actors"):
-                            particle_num = 6
-                            game.helpers.spawn_particles(component,
-                                particle_num,
-                                component.particle_source_name,
-                                lifetime=[3, 5],
-                                spawn_point=Vector2(transform.x, transform.y),
-                                rotation=[0, 360],
-                                scale=1,
-                                speed=[100, 200],
-                                spin_rate=[10, 20])
-                            damage = game.get_property(component.id, "damage")
-                            game.add_action(game.actions.Damage(collided_with_id, damage))
-                            game.add_action(game.actions.Destroy(component.id))
-                            if game.get_property(other_collider.id, "health") - damage <= 0:
-                                if game.camera.target_id == other_collider.collision_id:
-                                    game.add_action(game.actions.Destroy(other_collider.id, change_focus=component.collision_id))
-                                else:
-                                    game.add_action(game.actions.Destroy(other_collider.id))
-                                game.helpers.spawn_particles(other_collider,
-                                    50,
-                                    other_collider.particle_source_name,
-                                    lifetime=[5, 10],
-                                    spawn_point=Vector2(transform.x, transform.y),
-                                    rotation=[0, 360],
-                                    scale=[1, 2],
-                                    speed=[50, 900],
-                                    spin_rate=[10, 50])
-                        elif categs == ("projectiles", "projectiles") or categs == ("projectiles", "shapes"):
-                            particle_num = 6
-                            game.helpers.spawn_particles(component, particle_num,
-                                component.particle_source_name,
-                                lifetime=[3, 5],
-                                spawn_point=Vector2(transform.x, transform.y),
-                                rotation=[transform.rotation - 40, transform.rotation + 40],
-                                scale=1,
-                                speed=[100, 200],
-                                spin_rate=[10, 20])
-                            game.add_action(game.actions.Destroy(component.id))
+                        game.helpers.handle_collision(component, other_collider)
+                        # Checks what the categories are of the colliding objects, and acts accordingly.
 
 class HealthBarSystem(System):
     def __init__(self):

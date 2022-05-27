@@ -35,3 +35,50 @@ def spawn_particles(component, amount, source_string, spawn_point, rotation, sca
         particle = random.choice(particles)
         game.add_action(game.actions.SpawnParticle(game.get_unique_id(),
             f"{particle}", *new_args))
+
+def handle_collision(component_a, component_b):
+    parent_b_id = component_b.collision_id
+    game = component_a.game
+    if component_a.collision_category == "projectiles":
+        if component_b.collision_category == "actors":
+            particle_num = 6
+            transform = component_a.transform_component
+            game.helpers.spawn_particles(component_a,
+                particle_num,
+                component_a.particle_source_name,
+                lifetime=[3, 5],
+                spawn_point=Vector2(transform.x, transform.y),
+                rotation=[0, 360],
+                scale=1,
+                speed=[100, 200],
+                spin_rate=[10, 20])
+            damage = game.get_property(component_a.id, "damage")
+            game.add_action(game.actions.Damage(parent_b_id, damage))
+            game.add_action(game.actions.Destroy(component_a.id))
+            if game.get_property(component_b.id, "health") - damage <= 0:
+                if game.camera.target_id == component_b.collision_id:
+                    game.add_action(game.actions.Destroy(component_b.id, change_focus=component_a.collision_id))
+                else:
+                    game.add_action(game.actions.Destroy(component_b.id))
+                transform = game.get_component(parent_b_id, "transform")
+                game.helpers.spawn_particles(component_b,
+                    50,
+                    component_b.particle_source_name,
+                    lifetime=[5, 10],
+                    spawn_point=Vector2(transform.x, transform.y),
+                    rotation=[0, 360],
+                    scale=[1, 2],
+                    speed=[50, 900],
+                    spin_rate=[10, 50])
+        elif component_b.collision_category in ["projectiles", "shapes"]:
+            particle_num = 6
+            transform = component_a.transform_component
+            game.helpers.spawn_particles(component_a, particle_num,
+                component_a.particle_source_name,
+                lifetime=[3, 5],
+                spawn_point=Vector2(transform.x, transform.y),
+                rotation=[transform.rotation - 40, transform.rotation + 40],
+                scale=1,
+                speed=[100, 200],
+                spin_rate=[10, 20])
+            game.add_action(game.actions.Destroy(component_a.id))
