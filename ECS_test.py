@@ -123,6 +123,15 @@ class Game:
             self.living_entities -= 1
         except:
             pass
+    
+    def has_component(self, entity_id, component_name):
+        """Checks if an entity has a component without raising an error."""
+
+        try:
+            component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
+            return True
+        except KeyError:
+            return False
 
     def get_component(self, entity_id, component_name):
         """Gives a reference of a component of an entity."""

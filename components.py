@@ -124,10 +124,11 @@ class LifeTimer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, start_time, duration):
+    def activate(self, id, start_time, duration, animator_component=None):
         self.id = id
         self.start_time = start_time
         self.duration = duration
+        self.animator_component = animator_component
 
 class Collider(Component):
     def __init__(self, game, next_available):
@@ -175,12 +176,13 @@ class Animator(Component):
         self.current_frame = None
         self.start_time = None
         self.frame_start_time = None
+        self.duration_multipliers = [1] * len(current_animations)
         self.images = {}
         self.set_animation_set(animation_set)
         for animation in current_animations:
-            self.add_animation_state(animation)
+            self.add_animation_state(animation, 1)
     
-    def add_animation_state(self, animation):
+    def add_animation_state(self, animation, duration_multiplier):
         if animation in self.current_animations:
             self.stop(animation)
         self.current_animations.append(animation)
@@ -190,6 +192,7 @@ class Animator(Component):
             "start_time":None,
             "frame_start_time":None
         })
+        self.duration_multipliers.append(duration_multiplier)
     
     def get_state_of_animation(self, animation):
         """Gives you the animation, current_frame, start_time, and frame_start_time of an animation"""
@@ -208,13 +211,14 @@ class Animator(Component):
         self.current_animations = []
         self.animation_states = []
     
-    def play(self, animation):
-        self.add_animation_state(animation)
+    def play(self, animation, duration_multiplier=1):
+        self.add_animation_state(animation, duration_multiplier)
     
     def stop(self, animation):
         index = self.current_animations.index(animation)
         self.current_animations.remove(animation)
         self.animation_states.pop(index)
+        self.duration_multipliers.pop(index)
 
 class System:
     def __init__(self, component_type):
@@ -411,7 +415,11 @@ class LifeTimerSystem(System):
             component = self.components[i]
             if component.id is not None:
                 if time.time() - component.start_time >= component.duration:
-                    component.game.add_action(component.game.actions.Destroy(component.id))
+                    if component.animator_component != None:
+                        if "expired" not in component.animator_component.current_animations:
+                            component.animator_component.play("expired")
+                    else:
+                        component.game.add_action(component.game.actions.Destroy(component.id))
 
 class ColliderSystem(System):
     def __init__(self):
@@ -500,9 +508,9 @@ class AnimatorSystem(System):
             if component.id is not None:
                 game = component.game
                 anim_set = component.animation_set
-                for current_animation, animation_state in zip(component.current_animations, component.animation_states):
+                for current_animation, animation_state, animation_duration_multiplier in zip(component.current_animations, component.animation_states, component.duration_multipliers):
                     animation_properties = game.animations[anim_set][current_animation]
-                    duration = animation_properties["duration"]
+                    duration = animation_properties["duration"] * animation_duration_multiplier
                     state = animation_state
                     if state["start_time"] == None:
                         state["start_time"] = time.time()
@@ -510,14 +518,14 @@ class AnimatorSystem(System):
                         state["current_frame"] = 0
                         self.apply_frame(component, state, animation_properties["initial_frame"])
                         if duration == 0:
-                            self.end_animation(component, state, animation_properties["loop"])
+                            self.end_animation(component, state)
                     elif duration > 0:
                         frame = animation_properties["frames"][state["current_frame"]]
                         frame_duration = duration * frame["delay"]
                         elapsed = time.time() - state["frame_start_time"]
                         if time.time() - state["start_time"] >= duration:
                             self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
-                            self.end_animation(component, state, animation_properties["loop"])
+                            self.end_animation(component, state)
                             continue
                         elif elapsed >= frame_duration:
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
@@ -526,7 +534,7 @@ class AnimatorSystem(System):
                                 elapsed = time.time() - state["frame_start_time"]
                                 if time.time() - state["start_time"] >= duration:
                                     self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
-                                    self.end_animation(component, state, animation_properties["loop"])
+                                    self.end_animation(component, state)
                                     continue
                             else:
                                 continue
@@ -573,7 +581,7 @@ class AnimatorSystem(System):
     def go_to_next_frame(self, component, state, animation_properties, frame, frame_duration, elapsed):
         self.apply_frame(component, state, frame["properties"])
         if state["current_frame"] + 1 == len(animation_properties["frames"]):
-            self.end_animation(component, state, animation_properties["loop"])
+            self.end_animation(component, state)
             return False
         else:
             past = elapsed - frame_duration
@@ -581,13 +589,20 @@ class AnimatorSystem(System):
             state["frame_start_time"] = time.time() - past
             return True
     
-    def end_animation(self, component, state, loop):
+    def end_animation(self, component, state):
+        props = component.game.animations[component.animation_set][state["animation"]]
+        loop = props.get("loop", False)
         if not loop:
             component.current_animations.remove(state["animation"])
             component.animation_states.remove(state)
             component.graphics_component.reset_edits([i for i, x in enumerate(component.game.animations[component.animation_set]["indexes"]) if x != None])
         else:
             state["start_time"] = None
+        
+        on_finish = props.get("on finish", None)
+        if on_finish != None:
+            if on_finish == "destroy component":
+                component.game.add_action(component.game.actions.Destroy(component.id))
 
 
 transform_sys = TransformSystem()
