@@ -449,8 +449,7 @@ class ColliderSystem(System):
                     other_transform = other_collider.transform_component
                     other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
                     if component.collision_id != other_collider.collision_id and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
-                        game.helpers.handle_collision(component, other_collider)
-                        # Checks what the categories are of the colliding objects, and acts accordingly.
+                        game.helpers.handle_collision(component, other_collider) # Checks what the categories are of the colliding objects, and acts accordingly.
 
 class HealthBarSystem(System):
     def __init__(self):
