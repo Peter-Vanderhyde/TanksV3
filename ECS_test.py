@@ -10,7 +10,6 @@ import spatial_hashing
 import helpers
 import animations
 from pathlib import Path
-import os
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()

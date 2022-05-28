@@ -1,5 +1,41 @@
 tank_animation = {
     "indexes":["barrel", "body"],
+    "spawn":{
+        "duration":0.5,
+        "loop":False,
+        "initial_frame":{
+            "barrel":{
+                "scale":0
+            },
+            "body":{
+                "scale":0
+            }
+        },
+        "frames":[
+            {
+                "delay":0.5,
+                "properties":{
+                    "barrel":{
+                        "scale":0
+                    },
+                    "body":{
+                        "scale":1
+                    }
+                }
+            },
+            {
+                "delay":0.5,
+                "properties":{
+                    "barrel":{
+                        "scale":1
+                    },
+                    "body":{
+                        "scale":1
+                    }
+                }
+            }
+        ]
+    },
     "idle barrel":{
         "duration":0,
         "loop":False,

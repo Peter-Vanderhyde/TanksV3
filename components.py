@@ -78,12 +78,23 @@ class Graphics(Component):
         self.transform_component = transform_component
         # images = [[<name>, <offset_position>, <rotation>, <scale_offset>], [etc.]]
         self.images = images
+        self.image_edits = [{}] * len(images)
         self.last_rotation = None
+        self.last_edits = [{}] * len(images)
         self.last_used_images = [element[0] for element in self.images]
         self.previous_images = [element[0] for element in self.images]
+        self.reset_edits(list(range(len(images))))
     
     def switch_image_frame(self, index, new_image):
-        self.images[index][0] = new_image
+        if new_image == None:
+            self.image_edits[index]["image"] = False
+        else:
+            self.images[index][0] = new_image
+            self.image_edits[index]["image"] = True
+    
+    def reset_edits(self, indexes):
+        for index in indexes:
+            self.image_edits[index] = {"image":True,"position":Vector2(0, 0),"rotation":0,"scale":1}
 
 class Controller(Component):
     def __init__(self, game, next_available):
@@ -325,20 +336,26 @@ class GraphicsSystem(System):
                 component = self.components[component_index]
                 if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
                     for index, element in enumerate(component.images):
-                        image, offset_vector, rotation_offset, scale_offset = element
-                        if component.transform_component.rotation != component.last_rotation or component.images[index][0] != component.previous_images[index]:
-                            ck = image.get_colorkey()
-                            width, height = image.get_size()
-                            image = pygame.transform.scale(image, (math.ceil(width * component.transform_component.scale * scale_offset), math.ceil(height * component.transform_component.scale * scale_offset)))
-                            image = pygame.transform.rotate(image, -component.transform_component.rotation - rotation_offset)
-                            if ck:
-                                image.set_colorkey(ck)
-                            component.last_used_images[index] = image
-                            component.previous_images[index] = component.images[index][0]
-                        width, height = component.last_used_images[index].get_size()
-                        camera = component.game.camera
-                        offset_x, offset_y = offset_vector.rotate(component.transform_component.rotation)
-                        component.game.screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
+                        edits = component.image_edits[index]
+                        if edits["image"] and edits["scale"] != 0:
+                            image, offset_vector, rotation_offset, scale_offset = element
+                            position = offset_vector + edits["position"]
+                            rotation = component.transform_component.rotation + edits["image"]
+                            scale = component.transform_component.scale * edits["scale"]
+                            if component.transform_component.rotation != component.last_rotation or component.last_edits[index] != edits or component.images[index][0] != component.previous_images[index]:
+                                ck = image.get_colorkey()
+                                width, height = image.get_size()
+                                image = pygame.transform.scale(image, (math.ceil(width * scale * scale_offset), math.ceil(height * scale * scale_offset)))
+                                image = pygame.transform.rotate(image, -rotation - rotation_offset)
+                                if ck:
+                                    image.set_colorkey(ck)
+                                component.last_used_images[index] = image
+                                component.previous_images[index] = component.images[index][0]
+                                component.last_edits[index] = edits.copy()
+                            width, height = component.last_used_images[index].get_size()
+                            camera = component.game.camera
+                            offset_x, offset_y = position.rotate(rotation)
+                            component.game.screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
 class ControllerSystem(System):
@@ -515,24 +532,48 @@ class AnimatorSystem(System):
                                 continue
                         
                         elapsed_percent = elapsed / frame_duration
-                        self.iterate_frame(component, frame, elapsed_percent)
+                        self.iterate_frame(component, state, frame["properties"], elapsed_percent)
     
     def apply_frame(self, component, state, frame):
         graphics = component.graphics_component
         images = component.images
         for image, properties in frame.items():
             for property, value in properties.items():
+                graphics_image_index = images[image]
                 if property == "image":
-                    name = "/".join([component.animation_set, state["animation"], image])
-                    graphics.switch_image_frame(images[image], component.game.animation_images[f"{name}_{value}"])
+                    if value != None:
+                        name = "/".join([component.animation_set, state["animation"], image])
+                        graphics.switch_image_frame(graphics_image_index, component.game.animation_images[f"{name}_{value}"])
+                    else:
+                        graphics.switch_image_frame(graphics_image_index, None)
+                elif property == "scale":
+                    graphics.image_edits[graphics_image_index]["scale"] = value
+    
+    def get_previous_frame(self, component, state):
+        animation = component.game.animations[component.animation_set][state["animation"]]
+        if state["current_frame"] > 0:
+            return animation["frames"][state["current_frame"] - 1]["properties"]
+        else:
+            return animation["initial_frame"]
 
-    def iterate_frame(self, component, frame, percent):
-        pass
+    def iterate_frame(self, component, state, frame, percent):
+        previous_frame = self.get_previous_frame(component, state)
+        for image, properties in frame.items():
+            previous_props = previous_frame[image]
+            for property, value in properties.items():
+                graphics_image_index = component.images[image]
+                if property == "scale":
+                    try:
+                        change = value - previous_props["scale"]
+                    except:
+                        raise RuntimeError("Make sure the animation specifies a starting value for every property that's edited.")
+                    
+                    component.graphics_component.image_edits[graphics_image_index]["scale"] = previous_props["scale"] + change * percent
 
     def go_to_next_frame(self, component, state, animation_properties, frame, frame_duration, elapsed):
         self.apply_frame(component, state, frame["properties"])
         if state["current_frame"] + 1 == len(animation_properties["frames"]):
-            self.end_animation(component, state)
+            self.end_animation(component, state, animation_properties["loop"])
             return False
         else:
             past = elapsed - frame_duration
@@ -544,6 +585,7 @@ class AnimatorSystem(System):
         if not loop:
             component.current_animations.remove(state["animation"])
             component.animation_states.remove(state)
+            component.graphics_component.reset_edits([i for i, x in enumerate(component.game.animations[component.animation_set]["indexes"]) if x != None])
         else:
             state["start_time"] = None
 
