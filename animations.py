@@ -1,9 +1,13 @@
 # Animation set properties:
 # - indexes
-# - loop
-# - on finish
 # - <animation>
 #
+# Animation properties
+# - loop
+# - on finish
+# - initial frame
+# - frames
+# 
 # Possible on finish actions:
 # ----------------------------------
 # destroy component
@@ -13,7 +17,7 @@ tank_animation = {
     "indexes":["barrel", "body"],
     "spawn":{
         "duration":0.65,
-        "initial_frame":{
+        "initial frame":{
             "barrel":{
                 "scale":0
             },
@@ -25,9 +29,6 @@ tank_animation = {
             {
                 "delay":0.4,
                 "properties":{
-                    "barrel":{
-                        "scale":0
-                    },
                     "body":{
                         "scale":1.3
                     }
@@ -36,9 +37,6 @@ tank_animation = {
             {
                 "delay":0.1,
                 "properties":{
-                    "barrel":{
-                        "scale":0
-                    },
                     "body":{
                         "scale":1
                     }
@@ -49,9 +47,6 @@ tank_animation = {
                 "properties":{
                     "barrel":{
                         "scale":1.2
-                    },
-                    "body":{
-                        "scale":1
                     }
                 }
             },
@@ -60,9 +55,6 @@ tank_animation = {
                 "properties":{
                     "barrel":{
                         "scale":1
-                    },
-                    "body":{
-                        "scale":1
                     }
                 }
             }
@@ -70,7 +62,7 @@ tank_animation = {
     },
     "idle barrel":{
         "duration":0,
-        "initial_frame":{
+        "initial frame":{
             "barrel":{
                 "image":"0"
             }
@@ -78,7 +70,7 @@ tank_animation = {
     },
     "shoot barrel":{
         "duration":0.2,
-        "initial_frame":{
+        "initial frame":{
             "barrel":{
                 "image":"0"
             }
@@ -125,7 +117,7 @@ particle_animation = {
     "expired":{
         "duration":0.35,
         "on finish":"destroy component",
-        "initial_frame":{
+        "initial frame":{
             "particle":{
                 "scale":1
             }

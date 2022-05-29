@@ -190,7 +190,8 @@ class Animator(Component):
             "animation":animation,
             "current_frame":None,
             "start_time":None,
-            "frame_start_time":None
+            "frame_start_time":None,
+            "previous_states":{}
         })
         self.duration_multipliers.append(duration_multiplier)
     
@@ -344,7 +345,7 @@ class GraphicsSystem(System):
                         if edits["image"] and edits["scale"] != 0:
                             image, offset_vector, rotation_offset, scale_offset = element
                             position = offset_vector + edits["position"]
-                            rotation = component.transform_component.rotation + edits["image"]
+                            rotation = component.transform_component.rotation + edits["rotation"]
                             scale = component.transform_component.scale * edits["scale"]
                             if component.transform_component.rotation != component.last_rotation or component.last_edits[index] != edits or component.images[index][0] != component.previous_images[index]:
                                 ck = image.get_colorkey()
@@ -516,7 +517,8 @@ class AnimatorSystem(System):
                         state["start_time"] = time.time()
                         state["frame_start_time"] = time.time()
                         state["current_frame"] = 0
-                        self.apply_frame(component, state, animation_properties["initial_frame"])
+                        state["previous_states"] = {}
+                        self.apply_frame(component, state, animation_properties["initial frame"])
                         if duration == 0:
                             self.end_animation(component, state)
                     elif duration > 0:
@@ -546,7 +548,9 @@ class AnimatorSystem(System):
         graphics = component.graphics_component
         images = component.images
         for image, properties in frame.items():
+            state["previous_states"].setdefault(image, {})
             for property, value in properties.items():
+                state["previous_states"][image][property] = value
                 graphics_image_index = images[image]
                 if property == "image":
                     if value != None:
@@ -556,27 +560,23 @@ class AnimatorSystem(System):
                         graphics.switch_image_frame(graphics_image_index, None)
                 elif property == "scale":
                     graphics.image_edits[graphics_image_index]["scale"] = value
-    
-    def get_previous_frame(self, component, state):
-        animation = component.game.animations[component.animation_set][state["animation"]]
-        if state["current_frame"] > 0:
-            return animation["frames"][state["current_frame"] - 1]["properties"]
-        else:
-            return animation["initial_frame"]
+                elif property == "rotation":
+                    graphics.image_edits[graphics_image_index]["rotation"] = value
 
     def iterate_frame(self, component, state, frame, percent):
-        previous_frame = self.get_previous_frame(component, state)
         for image, properties in frame.items():
-            previous_props = previous_frame[image]
+            previous_props = state["previous_states"][image]
             for property, value in properties.items():
                 graphics_image_index = component.images[image]
-                if property == "scale":
-                    try:
+                try:
+                    if property == "scale":
                         change = value - previous_props["scale"]
-                    except:
-                        raise RuntimeError("Make sure the animation specifies a starting value for every property that's edited.")
-                    
-                    component.graphics_component.image_edits[graphics_image_index]["scale"] = previous_props["scale"] + change * percent
+                        component.graphics_component.image_edits[graphics_image_index]["scale"] = previous_props["scale"] + change * percent
+                    elif property == "rotation":
+                        change = value - previous_props["rotation"]
+                        component.graphics_component.image_edits[graphics_image_index]["rotation"] = previous_props["rotation"] + int(change * percent)
+                except:
+                    raise RuntimeError(f"'{state['animation']}' Animation missing initial {property} property.")
 
     def go_to_next_frame(self, component, state, animation_properties, frame, frame_duration, elapsed):
         self.apply_frame(component, state, frame["properties"])
@@ -592,17 +592,19 @@ class AnimatorSystem(System):
     def end_animation(self, component, state):
         props = component.game.animations[component.animation_set][state["animation"]]
         loop = props.get("loop", False)
+        
+        on_finish = props.get("on finish", None)
+        if on_finish != None:
+            if on_finish == "destroy component":
+                component.game.add_action(component.game.actions.Destroy(component.id))
+                return
+        
         if not loop:
             component.current_animations.remove(state["animation"])
             component.animation_states.remove(state)
             component.graphics_component.reset_edits([i for i, x in enumerate(component.game.animations[component.animation_set]["indexes"]) if x != None])
         else:
             state["start_time"] = None
-        
-        on_finish = props.get("on finish", None)
-        if on_finish != None:
-            if on_finish == "destroy component":
-                component.game.add_action(component.game.actions.Destroy(component.id))
 
 
 transform_sys = TransformSystem()
