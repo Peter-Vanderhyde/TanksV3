@@ -239,9 +239,9 @@ if __name__ == "__main__":
     id = game.get_unique_id()
     game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
     game.add_action(actions.FocusCamera(id, True))
-    for i in range(1):
+    for i in range(5):
         enemy_id = game.get_unique_id()
-        game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-500, 500), random.randint(-500, 500)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
+        game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
         game.add_action(actions.StartFiringBarrels(enemy_id))
 
     helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
@@ -261,10 +261,6 @@ if __name__ == "__main__":
 
 
         while game.accumulator >= game.dt:
-            try:
-                game.get_component(enemy_id, "transform").rotation += 100 * game.dt
-            except:
-                pass
             components.physics_sys.update(game.dt)
             game.camera.update()
             components.collider_sys.update()

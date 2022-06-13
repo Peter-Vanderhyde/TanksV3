@@ -151,6 +151,7 @@ class Collider(Component):
         self.particle_source_name = particle_source_name
         self.transform_component = transform_component
         self.collision_cells = set()
+        self.inactive = False
 
 class HealthBar(Component):
     def __init__(self, game, next_available):
@@ -453,13 +454,13 @@ class ColliderSystem(System):
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
-            if component.id is not None:
+            if component.id is not None and not component.inactive:
                 component.game.collision_maps[component.collision_category].move_collider(component)
         
         # THIS IS A HORRID FUNCTION
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
-            if component.id is not None:
+            if component.id is not None and not component.inactive:
                 game = component.game
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
@@ -474,7 +475,7 @@ class ColliderSystem(System):
                 for other_collider in colliding_with_set:
                     other_transform = other_collider.transform_component
                     other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
-                    if component.collision_id != other_collider.collision_id and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                    if component.collision_id != other_collider.collision_id and not other_collider.inactive and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                         game.helpers.handle_collision(component, other_collider) # Checks what the categories are of the colliding objects, and acts accordingly.
 
 class HealthBarSystem(System):
@@ -506,7 +507,7 @@ class AnimatorSystem(System):
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
-            if component.id is not None:
+            if component.id is not None and "done with animation" not in component.current_animations:
                 game = component.game
                 anim_set = component.animation_set
                 for current_animation, animation_state, animation_duration_multiplier in zip(component.current_animations, component.animation_states, component.duration_multipliers):
@@ -521,6 +522,8 @@ class AnimatorSystem(System):
                         self.apply_frame(component, state, animation_properties["initial frame"])
                         if duration == 0:
                             self.end_animation(component, state)
+                            if "done with animation" in component.current_animations:
+                                break
                     elif duration > 0:
                         frame = animation_properties["frames"][state["current_frame"]]
                         frame_duration = duration * frame["delay"]
@@ -528,6 +531,8 @@ class AnimatorSystem(System):
                         if time.time() - state["start_time"] >= duration:
                             self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                             self.end_animation(component, state)
+                            if "done with animation" in component.current_animations:
+                                break
                             continue
                         elif elapsed >= frame_duration:
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
@@ -537,6 +542,8 @@ class AnimatorSystem(System):
                                 if time.time() - state["start_time"] >= duration:
                                     self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                                     self.end_animation(component, state)
+                                    if "done with animation" in component.current_animations:
+                                        break
                                     continue
                             else:
                                 continue
@@ -590,14 +597,38 @@ class AnimatorSystem(System):
             return True
     
     def end_animation(self, component, state):
+        if state["animation"] == "die":
+            print()
         props = component.game.animations[component.animation_set][state["animation"]]
         loop = props.get("loop", False)
         
         on_finish = props.get("on finish", None)
         if on_finish != None:
-            if on_finish == "destroy component":
+            if "destroy component" in on_finish:
                 component.game.add_action(component.game.actions.Destroy(component.id))
-                return
+            if "spawn tank particles" in on_finish:
+                collider = component.game.get_component(component.id, "collider")
+                transform = component.game.get_component(component.id, "transform")
+                component.game.helpers.spawn_particles(collider,
+                    20,
+                    collider.particle_source_name,
+                    lifetime=[5, 10],
+                    spawn_point=Vector2(transform.x, transform.y),
+                    rotation=[0, 360],
+                    scale=[1, 1.5],
+                    speed=[50, 500],
+                    spin_rate=[10, 50])
+                component.game.helpers.spawn_particles(collider,
+                    1,
+                    "barrel",
+                    lifetime=[5, 10],
+                    spawn_point=Vector2(transform.x, transform.y),
+                    rotation=transform.rotation,
+                    scale=1,
+                    speed=[200, 500],
+                    spin_rate=[10, 50])
+            component.add_animation_state("done with animation", 1)
+            return
         
         if not loop:
             component.current_animations.remove(state["animation"])

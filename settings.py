@@ -26,7 +26,8 @@ PARTICLES = {
     'body_enemy': ['particle_enemy', 'particle_2_enemy'],
     'bullet_enemy': ['particle_2_enemy', 'particle_3_enemy'],
     'body_player': ['particle_player', 'particle_2_player'],
-    'bullet_player': ['particle_2_player', 'particle_3_player']
+    'bullet_player': ['particle_2_player', 'particle_3_player'],
+    "barrel":["barrel"]
 }
 
 COLLISION_CATEGORIES = ["projectiles", "actors", "shapes"]
