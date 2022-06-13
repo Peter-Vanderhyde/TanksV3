@@ -13,9 +13,9 @@ def spawn_shapes(game, amount, spawn_range):
         spin_friction = False
         game.add_action(game.actions.SpawnShape(id, spawn, rotation, scale, xp, spin_rate, spin_friction))
 
-def spawn_particles(component, amount, source_string, spawn_point, rotation, scale, speed, lifetime, spin_rate=0, decel=0.07, spin_friction=True, friction=settings.PARTICLE_FRICTION):
+def spawn_particles(component, amount, source_string, spawn_point, rotation, scale, speed, lifetime, spin_rate=0, decel=0.07, spin_friction=True, friction=settings.PARTICLE_FRICTION, collide=False):
     game = component.game
-    args = [spawn_point, rotation, scale, [speed, speed, 0], decel, lifetime, spin_rate, spin_friction, friction]
+    args = [spawn_point, rotation, scale, [speed, speed, 0], decel, lifetime, spin_rate, spin_friction, friction, collide]
     for i in range(amount):
         new_args = []
         for arg in args:
@@ -41,7 +41,7 @@ def handle_collision(component_a, component_b):
     game = component_a.game
     if component_a.collision_category == "projectiles":
         if component_b.collision_category == "actors":
-            particle_num = 6
+            particle_num = 5
             transform = component_a.transform_component
             game.helpers.spawn_particles(component_a,
                 particle_num,
@@ -56,6 +56,7 @@ def handle_collision(component_a, component_b):
             game.add_action(game.actions.Damage(parent_b_id, damage))
             game.add_action(game.actions.Destroy(component_a.id))
             if game.get_property(component_b.id, "health") - damage <= 0:
+                game.set_property(component_b.id, "health", 0)
                 if game.camera.target_id == component_b.collision_id:
                     game.add_action(game.actions.FocusCamera(component_a.collision_id))
                 game.get_component(component_b.id, "animator").play("die")
@@ -64,7 +65,7 @@ def handle_collision(component_a, component_b):
                 transform = game.get_component(parent_b_id, "transform")
                 
         elif component_b.collision_category in ["projectiles", "shapes"]:
-            particle_num = 6
+            particle_num = 5
             transform = component_a.transform_component
             game.helpers.spawn_particles(component_a, particle_num,
                 component_a.particle_source_name,
@@ -75,3 +76,7 @@ def handle_collision(component_a, component_b):
                 speed=[100, 200],
                 spin_rate=[10, 20])
             game.add_action(game.actions.Destroy(component_a.id))
+    elif component_a.collision_category == "actors":
+        if component_b.collision_category == "particles":
+            game.add_action(game.actions.Destroy(component_b.id))
+            game.set_property(component_a.id, "health", min(game.get_property(component_a.id, "health") + 2, 100))

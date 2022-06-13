@@ -20,7 +20,7 @@ Enemy_Controller: (TBD)
 Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
 Barrel_Manager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
 Life_Timer: (start_time, duration)
-Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes'], transform_component)
+Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes', 'particles], transform_component)
 
 '''
 
@@ -217,10 +217,13 @@ class Animator(Component):
         self.add_animation_state(animation, duration_multiplier)
     
     def stop(self, animation):
-        index = self.current_animations.index(animation)
-        self.current_animations.remove(animation)
-        self.animation_states.pop(index)
-        self.duration_multipliers.pop(index)
+        try:
+            index = self.current_animations.index(animation)
+            self.current_animations.remove(animation)
+            self.animation_states.pop(index)
+            self.duration_multipliers.pop(index)
+        except ValueError:
+            pass
 
 class System:
     def __init__(self, component_type):
@@ -617,7 +620,8 @@ class AnimatorSystem(System):
                     rotation=[0, 360],
                     scale=[1, 1.5],
                     speed=[50, 500],
-                    spin_rate=[10, 50])
+                    spin_rate=[10, 50],
+                    collide=True)
                 component.game.helpers.spawn_particles(collider,
                     1,
                     "barrel",

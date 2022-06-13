@@ -30,7 +30,7 @@ PARTICLES = {
     "barrel":["barrel"]
 }
 
-COLLISION_CATEGORIES = ["projectiles", "actors", "shapes"]
+COLLISION_CATEGORIES = ["projectiles", "actors", "shapes", "particles"]
 
 # Settings
 PLAYER_MAX_SPEED = 300
