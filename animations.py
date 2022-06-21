@@ -117,7 +117,7 @@ tank_animation = {
         }
     },
     "shoot barrel":{
-        "duration":0.2,
+        "duration":1,
         "initial frame":{
             "barrel":{
                 "image":"0"
@@ -183,7 +183,40 @@ particle_animation = {
     }
 }
 
+bullet_animation = {
+    "indexes":["bullet"],
+    "collided":{
+        "duration":0,
+        "on finish":["destroy component", "spawn bullet particles"],
+        "initial frame":{
+            "bullet":{
+                "scale":1
+            }
+        }
+    },
+    "expired":{
+        "duration":0.3,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "bullet":{
+                "scale":1
+            }
+        },
+        "frames":[
+            {
+                "delay":1,
+                "properties":{
+                    "bullet":{
+                        "scale":0
+                    }
+                }
+            }
+        ]
+    }
+}
+
 animations = {
     "tank":tank_animation,
-    "particle":particle_animation
+    "particle":particle_animation,
+    "bullet":bullet_animation
 }

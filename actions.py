@@ -122,7 +122,7 @@ class SpawnPlayer(Action):
         # (image, offset_vector, rotation_offset, scale_offset)
         barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
         game.add_component(self.player_id, "graphics", 1, barrels + [[game.images["body_player"], Vector2(0, 0), 0, 1]], game.get_component(self.player_id, "transform"))
-        game.add_component(self.player_id, "animator", "tank", ["spawn"], game.get_component(self.player_id, "graphics"))
+        game.add_component(self.player_id, "animator", "tank", ["spawn"], game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "controller", "player", settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform"))
         # [last_shot, cooldown, image_index]
@@ -158,7 +158,7 @@ class SpawnEnemy(Action):
         # (image, offset_vector, rotation_offset, scale_offset)
         barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
         game.add_component(self.enemy_id, "graphics", 1, barrels + [[game.images["body_enemy"], Vector2(0, 0), 0, 1]], game.get_component(self.enemy_id, "transform"))
-        game.add_component(self.enemy_id, "animator", "tank", ["spawn"], game.get_component(self.enemy_id, "graphics"))
+        game.add_component(self.enemy_id, "animator", "tank", ["spawn"], game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "controller", "enemy", game.get_component(self.enemy_id, "transform"))
         # [scale, angle_offset, last_shot, cooldown, image_index]
@@ -186,7 +186,8 @@ class SpawnBullet(Action):
         game.add_component(self.bullet_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.projectile_name], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "physics", self.angle, (self.speed, self.speed, self.speed), self.rotational_force, 1, 1, 0, game.get_component(self.bullet_id, "transform"))
-        game.add_component(self.bullet_id, "life timer", time.time(), 3)
+        game.add_component(self.bullet_id, "animator", "bullet", [], game.get_component(self.bullet_id, "graphics"), game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "life timer", time.time(), 3, game.get_component(self.bullet_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles", "shapes"], self.projectile_name, game.get_component(self.bullet_id, "transform"))
         game.add_property(self.bullet_id, "damage", game.get_property(self.owner_id, "damage"))
@@ -232,11 +233,11 @@ class SpawnParticle(Action):
         game.create_entity(self.particle_id)
         game.add_component(self.particle_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.particle_id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.particle_id, "transform"))
-        game.add_component(self.particle_id, "animator", "particle", [], game.get_component(self.particle_id, "graphics"))
+        game.add_component(self.particle_id, "animator", "particle", [], game.get_component(self.particle_id, "graphics"), game.get_component(self.particle_id, "transform"))
         game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, self.friction, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
         game.add_component(self.particle_id, "life timer", time.time(), self.lifetime, game.get_component(self.particle_id, "animator"))
         if self.collide:
-            if "particle_enemy" in self.image_string:
+            if "particle_enemy" in self.image_string or "particle_player" in self.image_string:
                 radius = 7 * self.scale
             elif "particle_2" in self.image_string:
                 radius = 6 * self.scale

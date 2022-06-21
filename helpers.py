@@ -41,42 +41,58 @@ def handle_collision(component_a, component_b):
     game = component_a.game
     if component_a.collision_category == "projectiles":
         if component_b.collision_category == "actors":
-            particle_num = 5
-            transform = component_a.transform_component
-            game.helpers.spawn_particles(component_a,
-                particle_num,
-                component_a.particle_source_name,
-                lifetime=[3, 5],
-                spawn_point=Vector2(transform.x, transform.y),
-                rotation=[0, 360],
-                scale=1,
-                speed=[100, 200],
-                spin_rate=[10, 20])
+            game.get_component(component_a.id, "animator").play("collided")
             damage = game.get_property(component_a.id, "damage")
             game.add_action(game.actions.Damage(parent_b_id, damage))
-            game.add_action(game.actions.Destroy(component_a.id))
             if game.get_property(component_b.id, "health") - damage <= 0:
                 game.set_property(component_b.id, "health", 0)
                 if game.camera.target_id == component_b.collision_id:
                     game.add_action(game.actions.FocusCamera(component_a.collision_id))
+                
                 game.get_component(component_b.id, "animator").play("die")
                 game.add_action(game.actions.StopFiringBarrels(component_b.id))
                 component_b.inactive = True
-                transform = game.get_component(parent_b_id, "transform")
                 
         elif component_b.collision_category in ["projectiles", "shapes"]:
-            particle_num = 5
-            transform = component_a.transform_component
-            game.helpers.spawn_particles(component_a, particle_num,
-                component_a.particle_source_name,
-                lifetime=[3, 5],
-                spawn_point=Vector2(transform.x, transform.y),
-                rotation=[transform.rotation - 40, transform.rotation + 40],
-                scale=1,
-                speed=[100, 200],
-                spin_rate=[10, 20])
-            game.add_action(game.actions.Destroy(component_a.id))
+            game.get_component(component_a.id, "animator").play("collided")
+    
     elif component_a.collision_category == "actors":
         if component_b.collision_category == "particles":
             game.add_action(game.actions.Destroy(component_b.id))
             game.set_property(component_a.id, "health", min(game.get_property(component_a.id, "health") + 2, 100))
+
+def tank_death(component):
+    collider = component.game.get_component(component.id, "collider")
+    transform = component.game.get_component(component.id, "transform")
+    component.game.helpers.spawn_particles(collider,
+        20,
+        collider.particle_source_name,
+        lifetime=[5, 10],
+        spawn_point=Vector2(transform.x, transform.y),
+        rotation=[0, 360],
+        scale=[1, 1.5],
+        speed=[50, 500],
+        spin_rate=[10, 50],
+        collide=True)
+    component.game.helpers.spawn_particles(collider,
+        1,
+        "barrel",
+        lifetime=[5, 10],
+        spawn_point=Vector2(transform.x, transform.y),
+        rotation=transform.rotation,
+        scale=1,
+        speed=[200, 500],
+        spin_rate=[10, 50])
+
+def bullet_death(component):
+    collider = component.game.get_component(component.id, "collider")
+    transform = component.game.get_component(component.id, "transform")
+    spawn_particles(collider,
+        2,
+        collider.particle_source_name,
+        lifetime=[3, 5],
+        spawn_point=Vector2(transform.x, transform.y),
+        rotation=[transform.rotation - 40, transform.rotation + 40],
+        scale=1,
+        speed=[100, 200],
+        spin_rate=[10, 20])

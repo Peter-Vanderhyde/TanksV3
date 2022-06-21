@@ -168,12 +168,13 @@ class Animator(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, animation_set, current_animations, graphics_component):
+    def activate(self, id, animation_set, current_animations, graphics_component, transform_component):
         self.id = id
         self.animation_set = ""
         self.current_animations = []
         self.animation_states = []
         self.graphics_component = graphics_component
+        self.transform_component = transform_component
         self.current_frame = None
         self.start_time = None
         self.frame_start_time = None
@@ -409,7 +410,7 @@ class BarrelManagerSystem(System):
                             firing_point = Vector2(component.transform_component.x + offset_x, component.transform_component.y + offset_y) + barrel_end
                             id = component.game.get_unique_id() #                         id, spawn_point, rotation, scale, angle, speed, owner
                             component.game.add_action(component.game.actions.SpawnBullet(id, component.id, firing_point, component.transform_component.rotation, scale, barrel_angle, settings.PLAYER_MAX_SPEED + 10, component.projectile_name))
-                            component.animator_component.play("shoot barrel")
+                            component.animator_component.play("shoot barrel", cooldown)
 
 class LifeTimerSystem(System):
     def __init__(self):
@@ -511,6 +512,11 @@ class AnimatorSystem(System):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None and "done with animation" not in component.current_animations:
+                if Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
+                    visible = True
+                else:
+                    visible = False
+                
                 game = component.game
                 anim_set = component.animation_set
                 for current_animation, animation_state, animation_duration_multiplier in zip(component.current_animations, component.animation_states, component.duration_multipliers):
@@ -537,7 +543,7 @@ class AnimatorSystem(System):
                             if "done with animation" in component.current_animations:
                                 break
                             continue
-                        elif elapsed >= frame_duration:
+                        elif elapsed >= frame_duration and visible:
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
                                 frame = animation_properties["frames"][state["current_frame"]]
                                 frame_duration = duration * frame["delay"]
@@ -551,8 +557,9 @@ class AnimatorSystem(System):
                             else:
                                 continue
                         
-                        elapsed_percent = elapsed / frame_duration
-                        self.iterate_frame(component, state, frame["properties"], elapsed_percent)
+                        if visible:
+                            elapsed_percent = elapsed / frame_duration
+                            self.iterate_frame(component, state, frame["properties"], elapsed_percent)
     
     def apply_frame(self, component, state, frame):
         graphics = component.graphics_component
@@ -610,27 +617,9 @@ class AnimatorSystem(System):
             if "destroy component" in on_finish:
                 component.game.add_action(component.game.actions.Destroy(component.id))
             if "spawn tank particles" in on_finish:
-                collider = component.game.get_component(component.id, "collider")
-                transform = component.game.get_component(component.id, "transform")
-                component.game.helpers.spawn_particles(collider,
-                    20,
-                    collider.particle_source_name,
-                    lifetime=[5, 10],
-                    spawn_point=Vector2(transform.x, transform.y),
-                    rotation=[0, 360],
-                    scale=[1, 1.5],
-                    speed=[50, 500],
-                    spin_rate=[10, 50],
-                    collide=True)
-                component.game.helpers.spawn_particles(collider,
-                    1,
-                    "barrel",
-                    lifetime=[5, 10],
-                    spawn_point=Vector2(transform.x, transform.y),
-                    rotation=transform.rotation,
-                    scale=1,
-                    speed=[200, 500],
-                    spin_rate=[10, 50])
+                component.game.helpers.tank_death(component)
+            if "spawn bullet particles" in on_finish:
+                component.game.helpers.bullet_death(component)
             component.add_animation_state("done with animation", 1)
             return
         

@@ -13,6 +13,7 @@ ASSETS = (
     ("bullet_enemy", True, white),
     ("body_player", True, white),
     ("bullet_player", True, white),
+    ("particle_barrel", True),
     ("particle_enemy", True, white),
     ("particle_player", True, white),
     ("particle_2_enemy", True, white),
@@ -23,11 +24,11 @@ ASSETS = (
 )
 
 PARTICLES = {
-    'body_enemy': ['particle_enemy', 'particle_2_enemy'],
-    'bullet_enemy': ['particle_2_enemy', 'particle_3_enemy'],
-    'body_player': ['particle_player', 'particle_2_player'],
-    'bullet_player': ['particle_2_player', 'particle_3_player'],
-    "barrel":["barrel"]
+    "body_enemy": ["particle_enemy", "particle_2_enemy"],
+    "bullet_enemy": ["particle_2_enemy", "particle_3_enemy"],
+    "body_player": ["particle_player", "particle_2_player"],
+    "bullet_player": ["particle_2_player", "particle_3_player"],
+    "barrel":["particle_barrel"]
 }
 
 COLLISION_CATEGORIES = ["projectiles", "actors", "shapes", "particles"]

@@ -10,7 +10,7 @@ class EnemyController:
     
     def update(self):
         transform = self.transform_component
-        transform.rotation = transform.rotation + 35 * self.game.dt
+        transform.rotation = transform.rotation + 55 * self.game.dt
 
     def get_action(self, event):
         pass
