@@ -74,9 +74,10 @@ class N_Quad_Tree:
                 screen.fill((255,255,255))
                 draw_search_node(self)
                 root.draw()
-                draw_red(n)
                 if closest:
+                    draw_line(n, closest[1])
                     draw_green(closest[1])
+                draw_red(n)
                 pygame.display.update()
                 time.sleep(draw_time)
             dist = self.get_dist(self.node.pos, n.pos)
@@ -92,9 +93,10 @@ class N_Quad_Tree:
                 screen.fill((255,255,255))
                 draw_search_node(self)
                 root.draw()
-                draw_red(n)
                 if closest:
+                    draw_line(n, closest[1])
                     draw_green(closest[1])
+                draw_red(n)
                 pygame.display.update()
                 time.sleep(draw_time)
             for c in self.children.values():
@@ -241,6 +243,9 @@ def draw_green(n):
 def draw_search_node(tree):
     pygame.draw.rect(screen, (245, 135, 135), (tree.tl, (tree.br.x - tree.tl.x, tree.br.y - tree.tl.y)))
 
+def draw_line(a, b):
+    pygame.draw.line(screen, (0, 0, 0), (a.pos.x, a.pos.y), (b.pos.x, b.pos.y))
+
 if __name__ == "__main__":
     screen = pygame.display.set_mode(screen_resolution)
     screen.fill((255, 255, 255))
@@ -275,10 +280,9 @@ if __name__ == "__main__":
             elif event.type == MOUSEBUTTONDOWN:
                 node = root.get_node_at_pos(Vector2(pygame.mouse.get_pos()))
                 if node.node:
-                    exists, closest = root.find_nearest_id(node.node, draw_time=0.1)
+                    exists, closest = root.find_nearest_id(node.node, draw_time=0.3)
                     if exists and closest is not None:
                         distance, closest_node = closest
-                        print(distance)
                         last_closest = [node, closest_node]
                     else:
                         print("Something went wrong")
@@ -294,6 +298,7 @@ if __name__ == "__main__":
                     distance, closest_node = closest
                     draw_search_node(mouse_node)
                     last_closest = [mouse_node.node, closest_node]
+                    draw_line(*last_closest)
                 else:
                     print("Something went wrong again")
             else:
