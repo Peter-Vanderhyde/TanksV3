@@ -9,6 +9,7 @@ import settings
 import spatial_hashing
 import helpers
 import animations
+import ui
 from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
@@ -56,6 +57,7 @@ class Game:
         self.controllers = controllers
         self.components = components
         self.animations = animations.animations
+        self.ui = ui
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
@@ -217,19 +219,10 @@ class Camera:
             pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
-def show_fps(fps_font):
-    """This function just displays the current fps in the topleft corner."""
-    
-    clock.tick()
-    font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
-    fps_rect = font.get_rect()
-    fps_rect.topleft = 0, 0
-    screen.blit(font, fps_rect)
-
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    FPS_FONT = pygame.font.SysFont("couriernew", 15)
+    FPS_FONT = ui.Font("couriernew", 15, colors.blue)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
     game = Game(screen, settings.COLLISION_GRID_WIDTH)
@@ -273,5 +266,5 @@ if __name__ == "__main__":
         components.graphics_sys.update()
         components.health_bar_sys.update()
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
-        show_fps(FPS_FONT)
+        ui.show_fps(FPS_FONT, game, clock)
         pygame.display.update()

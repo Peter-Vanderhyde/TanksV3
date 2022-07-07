@@ -1,6 +1,7 @@
 import random
 from pygame.math import Vector2
 import settings
+import pygame
 
 def spawn_shapes(game, amount, spawn_range):
     for i in range(amount):
@@ -96,3 +97,12 @@ def bullet_death(component):
         scale=1,
         speed=[100, 200],
         spin_rate=[10, 20])
+
+def create_font(name, size):
+    font = pygame.font.SysFont(name, size)
+    return font
+
+def render_font(font, text, color):
+    font = font.render(text, False, color)
+    rect = font.get_rect()
+    return font, rect
