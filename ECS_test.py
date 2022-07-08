@@ -58,6 +58,7 @@ class Game:
         self.components = components
         self.animations = animations.animations
         self.ui = ui
+        self.UI_Manager = ui.UI_Manager(self)
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self, components.controller_sys)
         self.camera = Camera(self)
@@ -222,7 +223,7 @@ class Camera:
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    FPS_FONT = ui.Font("couriernew", 15, colors.blue)
+    fps_text = ui.Text("couriernew", 15, colors.blue)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
     game = Game(screen, settings.COLLISION_GRID_WIDTH)
@@ -240,6 +241,8 @@ if __name__ == "__main__":
     helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
     game.action_handler.handle_actions()
+    test = game.UI_Manager.add_button(ui.Text("couriernew", 20, colors.black, "Testing"),
+        (300, 200), colors.black, colors.white, colors.light_gray, (100,100,100), (10, 5))
 
     while True:
         current_time = time.time()
@@ -266,5 +269,6 @@ if __name__ == "__main__":
         components.graphics_sys.update()
         components.health_bar_sys.update()
         pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
-        ui.show_fps(FPS_FONT, game, clock)
+        ui.show_fps(fps_text, game, clock)
+        game.UI_Manager.render_elements()
         pygame.display.update()

@@ -316,6 +316,8 @@ class ActionHandler:
                 pygame.quit()
                 sys.exit()
             else:
+                if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
+                    self.game.UI_Manager.check_ui_elements_at_pos(event)
                 self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
