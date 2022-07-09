@@ -4,12 +4,12 @@ import controllers
 import components
 import actions
 import colors
-import random
 import settings
 import spatial_hashing
 import helpers
 import animations
 import ui
+import state_machine
 from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
@@ -24,7 +24,6 @@ def load_image(name, alpha=True, colorkey=()):
     else:
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert()
     return image
-
 
 def load_images():
     d = {}
@@ -47,20 +46,36 @@ def load_animation_images():
     return animation_images
 
 class Game:
-    def __init__(self, screen, collision_grid_width):
+    def __init__(self, screen, collision_grid_width, scene_manager):
         self.screen = screen
+        self.clock = pygame.time.Clock()
         self.collision_grid_width = collision_grid_width
+
+        self.systems = {}
+        for system in components.systems:
+            s = system()
+            self.systems[s.component_name] = s
+        
+        self.component_index = {}
+        # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+
+        for i, component in enumerate(self.systems):
+            self.component_index[component] = i
+
+        self.system_index = [system for system in self.systems.values()]
 
         self.actions = actions
         self.colors = colors
+        self.settings = settings
         self.helpers = helpers
         self.controllers = controllers
         self.components = components
         self.animations = animations.animations
         self.ui = ui
         self.UI_Manager = ui.UI_Manager(self)
+        self.fps_text = ui.Text("couriernew", 15, colors.blue)
         #TODO Fix this action controller system at some point
-        self.action_handler = actions.ActionHandler(self, components.controller_sys)
+        self.action_handler = actions.ActionHandler(self, self.systems["controller"])
         self.camera = Camera(self)
         GM = spatial_hashing.GridManager
 
@@ -78,6 +93,9 @@ class Game:
         self.collision_maps = {}
         for category in settings.COLLISION_CATEGORIES:
             self.collision_maps[category] = GM(self.collision_grid_width)
+        
+        self.states = state_machine.states
+        self.SceneManager = scene_manager
     
     def get_unique_id(self):
         """Returns an int that's unique each time it's called"""
@@ -94,7 +112,7 @@ class Game:
         """Adds a new id to the list of entities without any components yet"""
 
         # Create [-1, -1, -1, etc] because we don't know what components it will have
-        component_indexes = [-1] * len(components.system_index)
+        component_indexes = [-1] * len(self.system_index)
         # Each entity is just an id number connected to a list of component indexes
         self.entities[entity_id] = component_indexes
         self.living_entities += 1
@@ -104,8 +122,8 @@ class Game:
         """Changes the value for the given component in that entity's list of
         component indexes from -1 to whatever the next open spot is"""
 
-        index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
-        self.entities[entity_id][components.component_index[component_name]] = index
+        index = self.systems[component_name].add_component(self, entity_id, *args, **kwargs)
+        self.entities[entity_id][self.component_index[component_name]] = index
         return entity_id
     
     def add_property(self, entity_id, property, value):
@@ -120,7 +138,7 @@ class Game:
         try:
             for i, index in enumerate(self.entities[entity_id]):
                 if index != -1:
-                    components.system_index[i].remove_component(index)
+                    self.system_index[i].remove_component(index)
             self.entities.pop(entity_id)
             self.entity_props.pop(entity_id)
             self.living_entities -= 1
@@ -131,7 +149,7 @@ class Game:
         """Checks if an entity has a component without raising an error."""
 
         try:
-            component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
+            component = self.systems[component_name].components[self.entities[entity_id][self.component_index[component_name]]]
             return True
         except KeyError:
             return False
@@ -140,7 +158,7 @@ class Game:
         """Gives a reference of a component of an entity."""
 
         try:
-            component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
+            component = self.systems[component_name].components[self.entities[entity_id][self.component_index[component_name]]]
             return component
         except KeyError:
             raise KeyError(f"Component `{component_name}` or entity `{entity_id}` does not exist.")
@@ -166,7 +184,6 @@ class Game:
 
         self.images.update(new_images_dict)
         self.animation_images.update(new_anim_images_dict)
-
 
 class Camera:
     def __init__(self, game, target_id=None):
@@ -220,55 +237,15 @@ class Camera:
             pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
+def create_game_instance(scene_manager):
+    game = Game(scene_manager.screen, settings.COLLISION_GRID_WIDTH, scene_manager)
+    game.update_images(load_images(), load_animation_images())
+    return game
 
 if __name__ == "__main__":
-    clock = pygame.time.Clock()
-    fps_text = ui.Text("couriernew", 15, colors.blue)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
-    game = Game(screen, settings.COLLISION_GRID_WIDTH)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
-    game.update_images(load_images(), load_animation_images())
-    id = game.get_unique_id()
-    game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.FocusCamera(id, True))
-    for i in range(5):
-        enemy_id = game.get_unique_id()
-        game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-        game.add_action(actions.StartFiringBarrels(enemy_id))
-
-    helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
-
-    game.action_handler.handle_actions()
-    test = game.UI_Manager.add_button(ui.Text("couriernew", 20, colors.black, "Testing"),
-        (300, 200), colors.black, colors.white, colors.light_gray, (100,100,100), (10, 5))
-
-    while True:
-        current_time = time.time()
-        frame_time = current_time - game.last_time
-        game.last_time = current_time
-        game.accumulator += frame_time
-        components.life_timer_sys.update()
-
-        game.action_handler.get_player_input()
-        components.controller_sys.update()
-        components.barrel_manager_sys.update()
-
-
-        while game.accumulator >= game.dt:
-            components.physics_sys.update(game.dt)
-            game.camera.update()
-            components.collider_sys.update()
-            game.action_handler.handle_actions()
-            game.accumulator -= game.dt
-        
-        screen.fill(colors.white)
-        game.camera.draw_grid()
-        components.animator_sys.update()
-        components.graphics_sys.update()
-        components.health_bar_sys.update()
-        pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
-        ui.show_fps(fps_text, game, clock)
-        game.UI_Manager.render_elements()
-        pygame.display.update()
+    SceneManager = state_machine.SceneManager(screen, "main menu")
+    SceneManager.start()

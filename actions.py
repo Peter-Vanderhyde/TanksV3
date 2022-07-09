@@ -309,16 +309,10 @@ class ActionHandler:
         self.controller_sys = controller_sys
         self.actions = actions
     
-    def get_player_input(self):
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            else:
-                if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
-                    self.game.UI_Manager.check_ui_elements_at_pos(event)
-                self.controller_sys.get_action_from_event(event)
+    def get_player_input(self, event):
+        if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
+            self.game.UI_Manager.check_ui_elements_at_pos(event)
+        self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
         self.actions.append(action)

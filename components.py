@@ -227,7 +227,8 @@ class Animator(Component):
             pass
 
 class System:
-    def __init__(self, component_type):
+    def __init__(self, component_name, component_type):
+        self.component_name = component_name
         self.component_type = component_type
         self.components = []
         self.first_available = None
@@ -274,13 +275,20 @@ class System:
         """Contains whatever code should be run for that component every loop"""
         pass
 
+class DisplayedSystem(System):
+    def update(self):
+        self.update_and_draw()
+
+    def update_and_draw(self):
+        pass
+
 class TransformSystem(System):
     def __init__(self):
-        super().__init__(Transform)
+        super().__init__("transform", Transform)
 
 class PhysicsSystem(System):
     def __init__(self):
-        super().__init__(Physics)
+        super().__init__("physics", Physics)
     
     def update(self, dt):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -300,9 +308,9 @@ class PhysicsSystem(System):
                     v = v.lerp(Vector2(), min(component.rotational_force * 0.05 * dt, 0.05))
                     component.rotational_force = v.length()
 
-class GraphicsSystem(System):
+class GraphicsSystem(DisplayedSystem):
     def __init__(self):
-        super().__init__(Graphics)
+        super().__init__("graphics", Graphics)
         self.layer_indexes = []
         self.layers = 0
     
@@ -340,7 +348,7 @@ class GraphicsSystem(System):
         except:
             raise Exception("Unable to remove component.")
     
-    def update(self):
+    def update_and_draw(self):
         for layer in self.layer_indexes:
             for component_index in layer:
                 component = self.components[component_index]
@@ -370,7 +378,7 @@ class GraphicsSystem(System):
 
 class ControllerSystem(System):
     def __init__(self):
-        super().__init__(Controller)
+        super().__init__("controller", Controller)
 
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -388,7 +396,7 @@ class ControllerSystem(System):
 
 class BarrelManagerSystem(System):
     def __init__(self):
-        super().__init__(BarrelManager)
+        super().__init__("barrel manager", BarrelManager)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -414,7 +422,7 @@ class BarrelManagerSystem(System):
 
 class LifeTimerSystem(System):
     def __init__(self):
-        super().__init__(LifeTimer)
+        super().__init__("life timer", LifeTimer)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -429,7 +437,7 @@ class LifeTimerSystem(System):
 
 class ColliderSystem(System):
     def __init__(self):
-        super().__init__(Collider)
+        super().__init__("collider", Collider)
     
     def add_component(self, game, *args, **kwargs):
         index = super().add_component(game, *args, **kwargs)
@@ -482,11 +490,11 @@ class ColliderSystem(System):
                     if component.collision_id != other_collider.collision_id and not other_collider.inactive and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                         game.helpers.handle_collision(component, other_collider) # Checks what the categories are of the colliding objects, and acts accordingly.
 
-class HealthBarSystem(System):
+class HealthBarSystem(DisplayedSystem):
     def __init__(self):
-        super().__init__(HealthBar)
+        super().__init__("health bar", HealthBar)
     
-    def update(self):
+    def update_and_draw(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
@@ -506,7 +514,7 @@ class HealthBarSystem(System):
 
 class AnimatorSystem(System):
     def __init__(self):
-        super().__init__(Animator)
+        super().__init__("animator", Animator)
     
     def update(self):
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -630,32 +638,14 @@ class AnimatorSystem(System):
         else:
             state["start_time"] = None
 
-
-transform_sys = TransformSystem()
-physics_sys = PhysicsSystem()
-graphics_sys = GraphicsSystem()
-controller_sys = ControllerSystem()
-barrel_manager_sys = BarrelManagerSystem()
-life_timer_sys = LifeTimerSystem()
-collider_sys = ColliderSystem()
-health_bar_sys = HealthBarSystem()
-animator_sys = AnimatorSystem()
-
-systems = {
-    "transform":transform_sys,
-    "physics":physics_sys,
-    "graphics":graphics_sys,
-    "controller":controller_sys,
-    "barrel manager":barrel_manager_sys,
-    "life timer":life_timer_sys,
-    "collider":collider_sys,
-    "health bar":health_bar_sys,
-    "animator":animator_sys
-}
-component_index = {}
-# Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
-
-for i, component in enumerate(systems):
-    component_index[component] = i
-
-system_index = [s for s in systems.values()]
+systems = [
+    TransformSystem,
+    PhysicsSystem,
+    GraphicsSystem,
+    ControllerSystem,
+    BarrelManagerSystem,
+    LifeTimerSystem,
+    ColliderSystem,
+    HealthBarSystem,
+    AnimatorSystem
+]
