@@ -11,15 +11,15 @@ from ECS_test import create_game_instance
 class SceneManager:
     def __init__(self, screen, start_state):
         self.screen = screen
-        self.game = None
+        self.game = create_game_instance(self)
         self.states = states
         self.start_state = start_state
         self.state = states[start_state]
+        self.last_time = time.time()
+        self.frame_time = 0
     
     def start(self):
-        self.state.game = create_game_instance(self)
-        self.state.start(self.state.game)
-        self.game = self.state.game
+        self.state.start(self.game)
         self.run()
     
     def run(self):
@@ -37,28 +37,30 @@ class SceneManager:
             self.state.get_event(event)
     
     def update(self):
+        current_time = time.time()
+        self.frame_time = current_time - self.last_time
+        self.last_time = current_time
+
         if self.state.switch:
-            self.next_state()
+            self.next_state(load_state=True)
         elif self.state.create:
             # This means you want to switch states, but you also want to restart that state
             # If you switch from the pause menu to the game, you don't want a new state
             # If you just start the game, you want a new state
-            self.next_state(True)
+            self.next_state(load_state=False)
         else:
-            self.state.update()
+            self.state.update(self.frame_time)
     
-    def next_state(self, new=False):
+    def next_state(self, load_state):
         next_state = self.state.next_state
         self.state.switch = False
         self.state.create = False
+        self.state.save_state()
         self.state = self.states[next_state]
-        if new:
-            self.state.game = None
-            self.state.game = create_game_instance(self)
-            self.state.start(self.state.game)
-
-        self.state.game.last_time = time.time()
-        self.game = self.state.game
+        if load_state:
+            self.state.load_state()
+        else:
+            self.state.start(self.game)
     
     def draw(self):
         self.state.draw()
@@ -70,18 +72,40 @@ class GameState:
         self.switch = False
         self.create = False
         self.game = None
+        self.component_systems = []
     
     def start(self, game):
         self.game = game
+        self.overwrite_state()
+        self.game.action_handler.set_controller_system(self.game.systems["controller"])
 
     def get_event(self, event):
         pass
 
-    def update(self):
+    def update(self, frame_time):
         pass
 
     def draw(self):
         pass
+    
+    def save_state(self):
+        self.component_systems = [self.game.systems, self.game.component_index, self.game.system_index]
+    
+    def load_state(self):
+        self.game.systems, self.game.component_index, self.game.system_index = self.component_systems
+    
+    def overwrite_state(self):
+        game = self.game
+        for system in game.components.systems:
+            s = system()
+            game.systems[s.component_name] = s
+        
+        # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
+        for i, component in enumerate(game.systems):
+            game.component_index[component] = i
+
+        game.system_index = [system for system in game.systems.values()]
+
 
 
 class MainMenu(GameState):
@@ -93,7 +117,7 @@ class MainMenu(GameState):
         super().start(game)
         
     
-    def update(self):
+    def update(self, frame_time):
         pass
     
     def get_event(self, event):
@@ -135,11 +159,8 @@ class Game(GameState):
             self.create = True
         self.game.action_handler.get_player_input(event)
 
-    def update(self):
+    def update(self, frame_time):
         game = self.game
-        current_time = time.time()
-        frame_time = current_time - game.last_time
-        game.last_time = current_time
         game.accumulator += frame_time
 
         game.systems["life timer"].update()

@@ -304,10 +304,13 @@ class Damage(Action):
 
 
 class ActionHandler:
-    def __init__(self, game, controller_sys, actions=[]):
+    def __init__(self, game, actions=[]):
         self.game = game
-        self.controller_sys = controller_sys
+        self.controller_sys = None
         self.actions = actions
+    
+    def set_controller_system(self, controller_sys):
+        self.controller_sys = controller_sys
     
     def get_player_input(self, event):
         if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:

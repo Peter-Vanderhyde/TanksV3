@@ -52,17 +52,8 @@ class Game:
         self.collision_grid_width = collision_grid_width
 
         self.systems = {}
-        for system in components.systems:
-            s = system()
-            self.systems[s.component_name] = s
-        
         self.component_index = {}
-        # Maps components to the index they are stored at in the entities. ie{"transform":0,"physics":1}
-
-        for i, component in enumerate(self.systems):
-            self.component_index[component] = i
-
-        self.system_index = [system for system in self.systems.values()]
+        self.system_index = []
 
         self.actions = actions
         self.colors = colors
@@ -75,7 +66,7 @@ class Game:
         self.UI_Manager = ui.UI_Manager(self)
         self.fps_text = ui.Text("couriernew", 15, colors.blue)
         #TODO Fix this action controller system at some point
-        self.action_handler = actions.ActionHandler(self, self.systems["controller"])
+        self.action_handler = actions.ActionHandler(self)
         self.camera = Camera(self)
         GM = spatial_hashing.GridManager
 
