@@ -1,5 +1,7 @@
+from pathlib import Path
 import pygame
 import time
+
 import controllers
 import components
 import actions
@@ -14,7 +16,6 @@ from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
-
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
@@ -45,15 +46,46 @@ def load_animation_images():
     
     return animation_images
 
-class Game:
+class Container:
+    def __init__(self, state_container):
+        self.state_container = state_container
+    
+    def get_systems(self):
+        return self.state_container.systems
+    
+    def get_component_index(self):
+        return self.state_container.component_index
+    
+    def get_system_index(self):
+        return self.state_container.system_index
+    
+    def get_entities(self):
+        return self.state_container.entities
+    
+    def get_entity_props(self):
+        return self.state_container.entity_props
+    
+    def get_living_entities(self):
+        return self.state_container.living_entities
+    
+    def get_last_id(self):
+        return self.state_container.last_id
+    
+    def get_collision_maps(self):
+        return self.state_container.collision_maps
+    
+    def set_living_entities(self, living_entities):
+        self.state_container.living_entities = living_entities
+    
+    def set_last_id(self, last_id):
+        self.state_container.last_id = last_id
+
+class Game(Container):
     def __init__(self, screen, collision_grid_width, scene_manager):
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.collision_grid_width = collision_grid_width
-
-        self.systems = {}
-        self.component_index = {}
-        self.system_index = []
+        self.scene_manager = scene_manager
 
         self.actions = actions
         self.colors = colors
@@ -62,59 +94,55 @@ class Game:
         self.controllers = controllers
         self.components = components
         self.animations = animations.animations
+        self.states = state_machine.states
         self.ui = ui
-        self.UI_Manager = ui.UI_Manager(self)
-        self.fps_text = ui.Text("couriernew", 15, colors.blue)
+
+        self.ui_manager = ui.UI_Manager(self)
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self)
         self.camera = Camera(self)
-        GM = spatial_hashing.GridManager
+        self.grid_manager = spatial_hashing.GridManager
 
         self.images = {}
         self.animation_images = {}
-        self.entities = {}
-        self.entity_props = {}
-        self.living_entities = 0
-        self.last_id = 0
-
         self.dt = 0.01
-        self.last_time = time.time()
         self.accumulator = 0.0
 
-        self.collision_maps = {}
-        for category in settings.COLLISION_CATEGORIES:
-            self.collision_maps[category] = GM(self.collision_grid_width)
-        
-        self.states = state_machine.states
-        self.SceneManager = scene_manager
+        self.fps_text = ui.Text("couriernew", 15, colors.blue)
+
+        # This now holds all of the things that change from state to state
+        # so when saving a state, this is what you save.
+        state_container = state_machine.StateContainer(self)
+        super().__init__(state_container)
     
     def get_unique_id(self):
         """Returns an int that's unique each time it's called"""
 
-        self.last_id += 1
-        return self.last_id - 1
+        last_id = self.get_last_id()
+        self.set_last_id(last_id + 1)
+        return last_id
     
     def is_alive(self, entity_id):
         """Return whether the given entity exists in entities still"""
 
-        return entity_id in self.entities
+        return entity_id in self.get_entities()
     
     def create_entity(self, entity_id):
         """Adds a new id to the list of entities without any components yet"""
 
         # Create [-1, -1, -1, etc] because we don't know what components it will have
-        component_indexes = [-1] * len(self.system_index)
+        component_indexes = [-1] * len(self.get_system_index())
         # Each entity is just an id number connected to a list of component indexes
-        self.entities[entity_id] = component_indexes
-        self.living_entities += 1
-        self.entity_props[entity_id] = {}
+        self.get_entities()[entity_id] = component_indexes
+        self.set_living_entities(self.get_living_entities() + 1)
+        self.get_entity_props()[entity_id] = {}
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
         """Changes the value for the given component in that entity's list of
         component indexes from -1 to whatever the next open spot is"""
 
-        index = self.systems[component_name].add_component(self, entity_id, *args, **kwargs)
-        self.entities[entity_id][self.component_index[component_name]] = index
+        index = self.get_systems()[component_name].add_component(self, entity_id, *args, **kwargs)
+        self.get_entities()[entity_id][self.get_component_index()[component_name]] = index
         return entity_id
     
     def add_property(self, entity_id, property, value):
@@ -127,12 +155,12 @@ class Game:
         the list of entities."""
 
         try:
-            for i, index in enumerate(self.entities[entity_id]):
+            for i, index in enumerate(self.get_entities()[entity_id]):
                 if index != -1:
-                    self.system_index[i].remove_component(index)
-            self.entities.pop(entity_id)
-            self.entity_props.pop(entity_id)
-            self.living_entities -= 1
+                    self.get_system_index()[i].remove_component(index)
+            self.get_entities().pop(entity_id)
+            self.get_entity_props().pop(entity_id)
+            self.set_living_entities(self.get_living_entities() - 1)
         except:
             pass
     
@@ -140,7 +168,7 @@ class Game:
         """Checks if an entity has a component without raising an error."""
 
         try:
-            component = self.systems[component_name].components[self.entities[entity_id][self.component_index[component_name]]]
+            component = self.get_component(entity_id, component_name)
             return True
         except KeyError:
             return False
@@ -149,7 +177,7 @@ class Game:
         """Gives a reference of a component of an entity."""
 
         try:
-            component = self.systems[component_name].components[self.entities[entity_id][self.component_index[component_name]]]
+            component = self.get_systems()[component_name].components[self.get_entities()[entity_id][self.get_component_index()[component_name]]]
             return component
         except KeyError:
             raise KeyError(f"Component `{component_name}` or entity `{entity_id}` does not exist.")
@@ -157,12 +185,12 @@ class Game:
     def get_property(self, entity_id, property):
         """Gives a reference of a property of an entity."""
 
-        return self.entity_props[entity_id][property]
+        return self.get_entity_props()[entity_id][property]
     
     def set_property(self, entity_id, property, value):
         """Changes the value of an entity's property."""
 
-        self.entity_props[entity_id][property] = value
+        self.get_entity_props()[entity_id][property] = value
     
     def add_action(self, action):
         """Append an action onto the handler's queue to be executed next cycle."""
@@ -238,5 +266,5 @@ if __name__ == "__main__":
 
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
-    SceneManager = state_machine.SceneManager(screen, "main menu")
-    SceneManager.start()
+    scene_manager = state_machine.SceneManager(screen, "main menu")
+    scene_manager.start()

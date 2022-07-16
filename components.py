@@ -441,12 +441,12 @@ class ColliderSystem(System):
     
     def add_component(self, game, *args, **kwargs):
         index = super().add_component(game, *args, **kwargs)
-        self.components[index].game.collision_maps[self.components[index].collision_category].insert_collider(self.components[index])
+        self.components[index].game.get_collision_maps()[self.components[index].collision_category].insert_collider(self.components[index])
         return index
     
     def remove_component(self, index):
         try:
-            self.components[index].game.collision_maps[self.components[index].collision_category].remove_collider(self.components[index])
+            self.components[index].game.get_collision_maps()[self.components[index].collision_category].remove_collider(self.components[index])
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
@@ -467,7 +467,7 @@ class ColliderSystem(System):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None and not component.inactive:
-                component.game.collision_maps[component.collision_category].move_collider(component)
+                component.game.get_collision_maps()[component.collision_category].move_collider(component)
         
         # THIS IS A HORRID FUNCTION
         for i in range(min(self.farthest_component + 1, len(self.components))):
@@ -476,9 +476,9 @@ class ColliderSystem(System):
                 game = component.game
                 transform = component.transform_component
                 origin = Vector2(transform.x, transform.y) + component.offset
-                colliding_with_set = set().union(*[game.collision_maps[c].contents.get(cell)
+                colliding_with_set = set().union(*[game.get_collision_maps()[c].contents.get(cell)
                         for cell in component.collision_cells for c in component.collidable_categories
-                        if game.collision_maps[c].contents.get(cell) != None])
+                        if game.get_collision_maps()[c].contents.get(cell) != None])
                 # These for loops loop through the categories that the collider is colliding with
                 # and gets the cells of each, ignoring any that are empty (ie None).
                 # It combines the cell sets of all the dictionaries that are in the same cell as itself.

@@ -90,6 +90,6 @@ def show_fps(fps_text, game, clock):
     """This function just displays the current fps in the topleft corner."""
     
     clock.tick()
-    fps_text.set_text(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}")
+    fps_text.set_text(f"Entities: {game.get_living_entities()}, FPS: {round(clock.get_fps())}")
     fps_text.rect.topleft = 6, 0
     game.screen.blit(fps_text.surf, fps_text.rect)
