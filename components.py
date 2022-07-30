@@ -226,6 +226,20 @@ class Animator(Component):
         except ValueError:
             pass
 
+class UI(Component):
+    def __init__(self, game, next_available):
+        super().__init__(game, next_available)
+    
+    def activate(self, id, ui_class):
+        self.id = id
+        self.element = ui_class
+        names = {
+            self.game.ui.Text:"text",
+            self.game.ui.Button:"button"
+        }
+        self.name = names[type(ui_class)]
+        self.checks_events = self.name in ["button"]
+
 class System:
     def __init__(self, component_name, component_type):
         self.component_name = component_name
@@ -638,6 +652,28 @@ class AnimatorSystem(System):
         else:
             state["start_time"] = None
 
+class UISystem(DisplayedSystem):
+    def __init__(self):
+        super().__init__("ui", UI)
+    
+    def update_and_draw(self):
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
+            if component.id is not None:
+                if component.name == "text":
+                    text = component.element
+                    if component.game.is_alive(text.reflect_prop[0]):
+                        prop = str(component.game.get_property(*text.reflect_prop))
+                        if text.text != prop:
+                            text.set_text(prop)
+                component.element.render(component.game.screen)
+    
+    def check_ui_elements_at_pos(self, event):
+        for i in range(min(self.farthest_component + 1, len(self.components))):
+            component = self.components[i]
+            if component.id is not None and component.checks_events:
+                component.element.check_event(event)
+
 systems = [
     TransformSystem,
     PhysicsSystem,
@@ -647,5 +683,6 @@ systems = [
     LifeTimerSystem,
     ColliderSystem,
     HealthBarSystem,
-    AnimatorSystem
+    AnimatorSystem,
+    UISystem
 ]

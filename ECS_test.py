@@ -1,7 +1,6 @@
 from pathlib import Path
 import pygame
 import time
-
 import controllers
 import components
 import actions
@@ -108,7 +107,7 @@ class Game(Container):
         self.dt = 0.01
         self.accumulator = 0.0
 
-        self.fps_text = ui.Text("couriernew", 15, colors.blue)
+        #self.fps_text = ui.Text("couriernew", 15, colors.blue)
 
         # This now holds all of the things that change from state to state
         # so when saving a state, this is what you save.
@@ -203,6 +202,30 @@ class Game(Container):
 
         self.images.update(new_images_dict)
         self.animation_images.update(new_anim_images_dict)
+    
+    def resync_components(self):
+        time_since_save = time.time() - self.state_container.time_of_save
+        for barrel_manager in self.get_systems()["barrel manager"].components:
+            if barrel_manager.id is not None:
+                for barrel in barrel_manager.barrels:
+                    barrel[0] = barrel[0] + time_since_save
+        
+        for life_timer in self.get_systems()["life timer"].components:
+            if life_timer.id is not None:
+                life_timer.start_time += time_since_save
+        
+        for animator in self.get_systems()["animator"].components:
+            if animator.id is not None:
+                for animation in animator.animation_states:
+                    if animation["start_time"] != None:
+                        animation["start_time"] += time_since_save
+                    if animation["frame_start_time"] != None:
+                        animation["frame_start_time"] += time_since_save
+        
+        for controller in self.get_systems()["controller"].components:
+            if controller.id is not None and controller.controller_name == "player":
+                self.add_action(self.actions.StopFiringBarrels(controller.id))
+
 
 class Camera:
     def __init__(self, game, target_id=None):

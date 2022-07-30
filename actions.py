@@ -3,6 +3,7 @@ import settings
 from pygame.math import Vector2
 import sys
 import time
+from ui import Anchor
 
 '''
 -----------
@@ -27,7 +28,8 @@ Destroy: (id)
 
 class Action:
     def __init__(self, id):
-        """Takes in the id that this action is applying to"""
+        """Takes in the id that this action is applying to.
+        It then checks if that id is still alive before making changes to it."""
         self.id = id
 
     def execute(self, game):
@@ -182,6 +184,8 @@ class SpawnBullet(Action):
         self.rotational_force = rotational_force
     
     def execute_action(self, game):
+        if not game.is_alive(self.owner_id):
+            return
         game.create_entity(self.bullet_id)
         game.add_component(self.bullet_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.projectile_name], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
@@ -250,6 +254,8 @@ class StartFiringBarrels(Action):
         super().__init__(id)
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = True
 
@@ -258,6 +264,8 @@ class StopFiringBarrels(Action):
         super().__init__(id)
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = False
 
@@ -286,6 +294,8 @@ class Destroy(Action):
         self.change_focus = change_focus
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         game.destroy_entity(self.id)
         if self.change_focus != None:
             game.add_action(game.actions.FocusCamera(self.change_focus))
@@ -298,9 +308,35 @@ class Damage(Action):
         self.damage = damage
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         health = game.get_property(self.id, "health")
         game.set_property(self.id, "health", health - self.damage)
 
+class CreateText(Action):
+    def __init__(self, text_id, font_name, size, color, reflect_prop=(), anchor=Anchor("top left", (0, 0))):
+        super().__init__(None)
+        self.text_id = text_id
+        self.font_name = font_name
+        self.size = size
+        self.color = color
+        self.get_id = reflect_prop[0]
+        self.get_prop = reflect_prop[1]
+        if self.get_id == self.text_id:
+            self.text = reflect_prop[2]
+        # This will be what entity it will get the text from, and what property to use.
+        # e.g. (id, prop) -> (46, "health")
+        # (self.id, "title", "Click Me")
+        # When just getting text that will not change, use the component's id as the first argument, pick a prop name,
+        # and put the text as the last arg.
+        self.anchor = anchor
+    
+    def execute_action(self, game):
+        game.create_entity(self.text_id)
+        if self.get_id == self.text_id:
+            game.add_property(self.get_id, self.get_prop, self.text)
+        
+        game.add_component(self.text_id, "ui", game.ui.Text(self.font_name, self.size, self.color, (self.get_id, self.get_prop), self.anchor))
 
 
 class ActionHandler:

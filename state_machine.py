@@ -6,9 +6,11 @@ import random
 import colors
 import time
 from ECS_test import create_game_instance
+from ui import Anchor
 
 class StateContainer:
     def __init__(self, game):
+        self.time_of_save = time.time()
         self.systems = {}
         self.component_index = {}
         self.system_index = []
@@ -116,10 +118,12 @@ class GameState:
     
     def save_state(self):
         self.state_container = self.game.state_container
+        self.state_container.time_of_save = time.time()
     
     def load_state(self):
         self.game.state_container = self.state_container
         self.game.action_handler.set_controller_system(self.game.get_systems()["controller"])
+        self.game.resync_components()
     
     def overwrite_state(self):
         self.game.state_container = StateContainer(self.game)
@@ -153,9 +157,9 @@ class Game(GameState):
     
     def start(self, game):
         super().start(game)
-        id = game.get_unique_id()
-        game.add_action(game.actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
-        game.add_action(game.actions.FocusCamera(id, True))
+        player_id = game.get_unique_id()
+        game.add_action(game.actions.SpawnPlayer(player_id, Vector2(0, 0), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
+        game.add_action(game.actions.FocusCamera(player_id, True))
         for i in range(5):
             enemy_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEnemy(enemy_id, Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000)), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
@@ -164,8 +168,11 @@ class Game(GameState):
         game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
         game.action_handler.handle_actions()
-        test = game.ui_manager.add_button(game.ui.Text("couriernew", 20, colors.black, "Testing"),
-            (300, 200), colors.black, colors.white, colors.light_gray, (100,100,100), (10, 5))
+        test = game.get_unique_id()
+        game.add_action(game.actions.CreateText(test, "couriernew", 20, colors.black, (player_id, "health"),
+            Anchor("center", (300, 200))))
+        #test = game.ui_manager.add_button(game.ui.Text("couriernew", 20, colors.black, "Testing"),
+        #    game.ui.Anchor("center", (300, 200)), colors.black, colors.white, colors.light_gray, (100,100,100), (10, 5))
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_ESCAPE:
@@ -199,8 +206,8 @@ class Game(GameState):
         game.get_systems()["graphics"].update_and_draw()
         game.get_systems()["health bar"].update_and_draw()
         pygame.draw.rect(game.screen, colors.black, (1, 1, game.screen.get_width(), game.screen.get_height()), 3)
-        game.ui.show_fps(game.fps_text, game, game.clock)
-        game.ui_manager.render_elements()
+        #game.ui.show_fps(game.fps_text, game, game.clock)
+        game.get_systems()["ui"].update_and_draw()
 
 states = {
     "main menu":MainMenu(),
