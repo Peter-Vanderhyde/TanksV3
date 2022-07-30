@@ -154,6 +154,7 @@ class Game(GameState):
     def __init__(self):
         super().__init__()
         self.next_state = "main menu"
+        self.fps_text = None
     
     def start(self, game):
         super().start(game)
@@ -168,11 +169,15 @@ class Game(GameState):
         game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
         game.action_handler.handle_actions()
+
+        self.fps_text = game.get_unique_id()
+        game.add_action(game.actions.CreateText(self.fps_text, "couriernew", 15, colors.blue, (self.fps_text, "fps info", "temp"),
+            Anchor("top left", (6, 0))))
+
         test = game.get_unique_id()
-        game.add_action(game.actions.CreateText(test, "couriernew", 20, colors.black, (player_id, "health"),
-            Anchor("center", (300, 200))))
-        #test = game.ui_manager.add_button(game.ui.Text("couriernew", 20, colors.black, "Testing"),
-        #    game.ui.Anchor("center", (300, 200)), colors.black, colors.white, colors.light_gray, (100,100,100), (10, 5))
+        text = game.ui.Text("couriernew", 20, colors.black, (test, "text", "Testing"))
+        game.add_action(game.actions.CreateButton(test, text, Anchor("center", (300, 200)), colors.black,
+            colors.white, colors.light_gray, (100, 100, 100), (10, 5)))
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_ESCAPE:
@@ -206,7 +211,7 @@ class Game(GameState):
         game.get_systems()["graphics"].update_and_draw()
         game.get_systems()["health bar"].update_and_draw()
         pygame.draw.rect(game.screen, colors.black, (1, 1, game.screen.get_width(), game.screen.get_height()), 3)
-        #game.ui.show_fps(game.fps_text, game, game.clock)
+        game.ui.update_fps_info(self.fps_text, game, game.clock)
         game.get_systems()["ui"].update_and_draw()
 
 states = {

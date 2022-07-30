@@ -17,32 +17,6 @@ class Anchor:
         elif self.anchor_point_string == "bottom right":
             rect.botright = self.pos
 
-class UI_Manager:
-    def __init__(self, game):
-        self.game = game
-        self.buttons = []
-    
-    def add_button(self, *args, **kwargs):
-        self.buttons.append(Button(*args, **kwargs))
-    
-    def render_elements(self):
-        for button in self.buttons:
-            button.render(self.game.screen)
-    
-    def check_ui_elements_at_pos(self, event):
-        pos = event.pos
-        for button in self.buttons:
-            if button.rect.collidepoint(pos):
-                if event.type == pygame.MOUSEMOTION:
-                    if button.state != "pressed":
-                        button.state = "hovering"
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    button.state = "pressed"
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    button.state = "hovering"
-            else:
-                button.state = ""
-
 class Text:
     def __init__(self, font_name, size, color, reflect_prop, anchor=Anchor("top left", (0, 0))):
         self.font_name = font_name
@@ -114,13 +88,12 @@ class Button:
         else:
             self.state = ""
 
-def show_fps(fps_text, game, clock):
+def update_fps_info(fps_id, game, clock):
     """This function just displays the current fps in the topleft corner."""
     
     clock.tick()
-    fps_text.set_text(f"Entities: {game.get_living_entities()}, FPS: {round(clock.get_fps())}")
-    fps_text.rect.topleft = 6, 0
-    game.screen.blit(fps_text.surf, fps_text.rect)
+    if game.is_alive(fps_id):
+        game.set_property(fps_id, "fps info", f"Entities: {game.get_living_entities()}, FPS: {round(clock.get_fps())}")
 
 types = {
     "text":Text,

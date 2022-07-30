@@ -660,8 +660,11 @@ class UISystem(DisplayedSystem):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                if component.name == "text":
-                    text = component.element
+                if component.name in ["text", "button"]:
+                    if component.name == "text":
+                        text = component.element
+                    else:
+                        text = component.element.text
                     if component.game.is_alive(text.reflect_prop[0]):
                         prop = str(component.game.get_property(*text.reflect_prop))
                         if text.text != prop:

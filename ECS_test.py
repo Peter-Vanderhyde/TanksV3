@@ -96,7 +96,6 @@ class Game(Container):
         self.states = state_machine.states
         self.ui = ui
 
-        self.ui_manager = ui.UI_Manager(self)
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self)
         self.camera = Camera(self)
@@ -106,8 +105,6 @@ class Game(Container):
         self.animation_images = {}
         self.dt = 0.01
         self.accumulator = 0.0
-
-        #self.fps_text = ui.Text("couriernew", 15, colors.blue)
 
         # This now holds all of the things that change from state to state
         # so when saving a state, this is what you save.

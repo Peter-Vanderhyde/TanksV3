@@ -338,6 +338,31 @@ class CreateText(Action):
         
         game.add_component(self.text_id, "ui", game.ui.Text(self.font_name, self.size, self.color, (self.get_id, self.get_prop), self.anchor))
 
+class CreateButton(Action):
+    def __init__(self, button_id, text_obj, anchor, outline_color, default_color, hover_color, pressed_color,
+            padding=(0, 0), edge_rounding=2, outline_width=2):
+        super().__init__(None)
+        self.button_id = button_id
+        self.text_obj = text_obj
+        self.anchor = anchor
+        self.outline_color = outline_color
+        self.default_color = default_color
+        self.hover_color = hover_color
+        self.pressed_color = pressed_color
+        self.padding = padding
+        self.edge_rounding = edge_rounding
+        self.outline_width = outline_width
+    
+    def execute_action(self, game):
+        game.create_entity(self.button_id)
+        if self.text_obj.reflect_prop[0] == self.button_id:
+            game.add_property(*self.text_obj.reflect_prop)
+            self.text_obj.reflect_prop = (self.button_id, self.text_obj.reflect_prop[1])
+            self.text_obj.set_text(game.get_property(*self.text_obj.reflect_prop))
+        
+        game.add_component(self.button_id, "ui", game.ui.Button(self.text_obj, self.anchor, self.outline_color, self.default_color,
+            self.hover_color, self.pressed_color, self.padding, self.edge_rounding, self.outline_width))
+
 
 class ActionHandler:
     def __init__(self, game, actions=[]):
@@ -350,7 +375,7 @@ class ActionHandler:
     
     def get_player_input(self, event):
         if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
-            self.game.ui_manager.check_ui_elements_at_pos(event)
+            self.game.get_systems()["ui"].check_ui_elements_at_pos(event)
         self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
