@@ -340,7 +340,7 @@ class CreateText(Action):
 
 class CreateButton(Action):
     def __init__(self, button_id, text_obj, anchor, outline_color, default_color, hover_color, pressed_color,
-            padding=(0, 0), edge_rounding=2, outline_width=2):
+            change_on_click, padding=(0, 0), edge_rounding=2, outline_width=2):
         super().__init__(None)
         self.button_id = button_id
         self.text_obj = text_obj
@@ -349,6 +349,7 @@ class CreateButton(Action):
         self.default_color = default_color
         self.hover_color = hover_color
         self.pressed_color = pressed_color
+        self.change_on_click = change_on_click
         self.padding = padding
         self.edge_rounding = edge_rounding
         self.outline_width = outline_width
@@ -361,7 +362,7 @@ class CreateButton(Action):
             self.text_obj.set_text(game.get_property(*self.text_obj.reflect_prop))
         
         game.add_component(self.button_id, "ui", game.ui.Button(self.text_obj, self.anchor, self.outline_color, self.default_color,
-            self.hover_color, self.pressed_color, self.padding, self.edge_rounding, self.outline_width))
+            self.hover_color, self.pressed_color, self.change_on_click, self.padding, self.edge_rounding, self.outline_width))
 
 
 class ActionHandler:

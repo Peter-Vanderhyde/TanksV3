@@ -16,6 +16,11 @@ from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
 
+#TODO Create pause menu
+# Make the particles darker
+# Make the collectible particles green
+# Make a random chance to drop and random amount of them
+
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert_alpha()
@@ -222,7 +227,6 @@ class Game(Container):
         for controller in self.get_systems()["controller"].components:
             if controller.id is not None and controller.controller_name == "player":
                 self.add_action(self.actions.StopFiringBarrels(controller.id))
-
 
 class Camera:
     def __init__(self, game, target_id=None):

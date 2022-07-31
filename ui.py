@@ -44,7 +44,7 @@ class Text:
 
 class Button:
     def __init__(self, text_obj, anchor, outline_color, default_color, hover_color, pressed_color,
-            padding=(0, 0), edge_rounding=2, outline_width=2):
+            change_on_click, padding=(0, 0), edge_rounding=2, outline_width=2):
         self.text = text_obj
         self.anchor = anchor
         self.rect = None
@@ -54,6 +54,7 @@ class Button:
         self.default_color = default_color
         self.hover_color = hover_color
         self.pressed_color = pressed_color
+        self.func_or_var, self.args_or_val = change_on_click
         self.edge_rounding = edge_rounding
         self.outline_width = outline_width
         self.state = ""
@@ -83,6 +84,13 @@ class Button:
                     self.state = "hovering"
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.state = "pressed"
+                if callable(self.func_or_var):
+                    if type(self.args_or_val) == tuple:
+                        self.func_or_var(*self.args_or_val)
+                    else:
+                        self.func_or_var(self.args_or_val)
+                else:
+                    self.func_or_var = self.args_or_val
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.state = "hovering"
         else:

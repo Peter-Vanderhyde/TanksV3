@@ -5,7 +5,7 @@ import sys
 import random
 import colors
 import time
-from ECS_test import create_game_instance
+from ECS_test import Camera, create_game_instance
 from ui import Anchor
 
 class StateContainer:
@@ -21,6 +21,9 @@ class StateContainer:
         self.last_id = 0
 
         self.collision_maps = {}
+
+        self.actions = []
+        self.camera = None
 
         for system in game.components.systems:
             s = system()
@@ -69,6 +72,7 @@ class SceneManager:
         current_time = time.time()
         self.frame_time = current_time - self.last_time
         self.last_time = current_time
+        self.game.dt = self.frame_time
 
         if self.state.switch:
             self.next_state(load_state=True)
@@ -117,16 +121,22 @@ class GameState:
         pass
     
     def save_state(self):
+        self.game.state_container.actions = self.game.action_handler.actions
+        self.game.action_handler.actions = []
+        self.game.state_container.camera = self.game.camera
         self.state_container = self.game.state_container
         self.state_container.time_of_save = time.time()
     
     def load_state(self):
         self.game.state_container = self.state_container
         self.game.action_handler.set_controller_system(self.game.get_systems()["controller"])
+        self.game.action_handler.actions = self.game.state_container.actions
+        self.game.camera = self.game.state_container.camera
         self.game.resync_components()
     
     def overwrite_state(self):
         self.game.state_container = StateContainer(self.game)
+        self.game.camera = Camera(self.game)
 
 
 class MainMenu(GameState):
@@ -136,19 +146,66 @@ class MainMenu(GameState):
     
     def start(self, game):
         super().start(game)
+        # Creates title text
+        title = game.get_unique_id()
+        game.add_action(game.actions.CreateText(title, "segoeprint", 50, colors.black, (title, "title", "Work In Progress"),
+            Anchor("center", (game.screen.get_width() // 2 - 4, game.screen.get_height() // 4 + 4))))
+        game.add_action(game.actions.CreateText(game.get_unique_id(), "segoeprint", 50, colors.blue, (title, "title"),
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 4))))
         
+        # Creates start button
+        start_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 30, (0, 0, 150), (start_button, "text", "Start"))
+        def func(g, x):
+            g.scene_manager.state.create = x
+        game.add_action(game.actions.CreateButton(start_button, t,
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2)), colors.black, colors.white,
+            colors.light_gray, colors.green, (func, (game, True)), padding=(20, 10), outline_width=3))
+        
+        # Creates exit button
+        exit_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 30, (0, 0, 150), (exit_button, "text", "Exit"))
+        game.add_action(game.actions.CreateButton(exit_button, t,
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2 + 100)), colors.black, colors.white,
+            colors.light_gray, colors.green, (game.add_action, game.actions.Quit()), padding=(20, 10), outline_width=3))
+        
+        # for i in range(5):
+        #     enemy_id = game.get_unique_id()
+        #     size = game.screen.get_size()
+        #     game.add_action(game.actions.SpawnEnemy(enemy_id, Vector2(random.randint(0, size[0]), random.randint(0, size[1])), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
+        #     game.add_action(game.actions.StartFiringBarrels(enemy_id))
+        
+        game.add_action(game.actions.PositionCamera(Vector2((game.screen.get_width() // 2, game.screen.get_height() // 2))))
     
     def update(self, frame_time):
-        pass
+        game = self.game
+        game.accumulator += frame_time
+
+        game.get_systems()["life timer"].update()
+        game.get_systems()["controller"].update()
+        game.get_systems()["barrel manager"].update()
+
+        while game.accumulator >= frame_time:
+            game.get_systems()["physics"].update(frame_time)
+            game.camera.update()
+            game.get_systems()["collider"].update()
+            game.action_handler.handle_actions()
+            game.accumulator -= frame_time
+        
+        game.get_systems()["animator"].update()
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_RETURN:
             self.create = True
         elif event.type == KEYDOWN and event.key == K_SPACE:
             self.switch = True
+        self.game.action_handler.get_player_input(event)
     
     def draw(self):
         self.game.screen.fill(colors.white)
+        self.game.get_systems()["graphics"].update_and_draw()
+        self.game.get_systems()["health bar"].update_and_draw()
+        self.game.get_systems()["ui"].update_and_draw()
 
 class Game(GameState):
     def __init__(self):
@@ -174,10 +231,10 @@ class Game(GameState):
         game.add_action(game.actions.CreateText(self.fps_text, "couriernew", 15, colors.blue, (self.fps_text, "fps info", "temp"),
             Anchor("top left", (6, 0))))
 
-        test = game.get_unique_id()
-        text = game.ui.Text("couriernew", 20, colors.black, (test, "text", "Testing"))
-        game.add_action(game.actions.CreateButton(test, text, Anchor("center", (300, 200)), colors.black,
-            colors.white, colors.light_gray, (100, 100, 100), (10, 5)))
+        #test = game.get_unique_id()
+        #text = game.ui.Text("couriernew", 20, colors.black, (test, "text", "Testing"))
+        #game.add_action(game.actions.CreateButton(test, text, Anchor("center", (300, 200)), colors.black,
+        #    colors.white, colors.light_gray, (100, 100, 100), (10, 5)))
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_ESCAPE:
@@ -195,12 +252,12 @@ class Game(GameState):
         game.get_systems()["controller"].update()
         game.get_systems()["barrel manager"].update()
 
-        while game.accumulator >= game.dt:
-            game.get_systems()["physics"].update(game.dt)
+        while game.accumulator >= frame_time:
+            game.get_systems()["physics"].update(frame_time)
             game.camera.update()
             game.get_systems()["collider"].update()
             game.action_handler.handle_actions()
-            game.accumulator -= game.dt
+            game.accumulator -= frame_time
         
         game.get_systems()["animator"].update()
     
