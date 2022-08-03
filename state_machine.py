@@ -154,17 +154,17 @@ class MainMenu(GameState):
             Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 4))))
         
         # Creates start button
-        start_button = game.get_unique_id()
-        t = game.ui.Text("couriernew", 30, (0, 0, 150), (start_button, "text", "Start"))
+        play_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 20, (0, 0, 150), (play_button, "text", "Play"))
         def func(g, x):
             g.scene_manager.state.create = x
-        game.add_action(game.actions.CreateButton(start_button, t,
+        game.add_action(game.actions.CreateButton(play_button, t,
             Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2)), colors.black, colors.white,
             colors.light_gray, colors.green, (func, (game, True)), padding=(20, 10), outline_width=3))
         
         # Creates exit button
         exit_button = game.get_unique_id()
-        t = game.ui.Text("couriernew", 30, (0, 0, 150), (exit_button, "text", "Exit"))
+        t = game.ui.Text("couriernew", 20, (0, 0, 150), (exit_button, "text", "Exit"))
         game.add_action(game.actions.CreateButton(exit_button, t,
             Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2 + 100)), colors.black, colors.white,
             colors.light_gray, colors.green, (game.add_action, game.actions.Quit()), padding=(20, 10), outline_width=3))
@@ -207,10 +207,62 @@ class MainMenu(GameState):
         self.game.get_systems()["health bar"].update_and_draw()
         self.game.get_systems()["ui"].update_and_draw()
 
-class Game(GameState):
+class PauseMenu(GameState):
     def __init__(self):
         super().__init__()
         self.next_state = "main menu"
+    
+    def start(self, game):
+        super().start(game)
+        title = game.get_unique_id()
+        game.add_action(game.actions.CreateText(title, "segoeprint", 40, colors.black, (title, "title", "Pause Menu"),
+            Anchor("center", (game.screen.get_width() // 2 - 4, game.screen.get_height() // 4 + 4))))
+        game.add_action(game.actions.CreateText(game.get_unique_id(), "segoeprint", 40, colors.blue, (title, "title"),
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 4))))
+        
+        # Creates continue button
+        continue_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 30, (0, 0, 150), (continue_button, "text", "Continue"))
+        def func(g, x):
+            g.scene_manager.state.next_state = "game"
+            g.scene_manager.state.switch = x
+        game.add_action(game.actions.CreateButton(continue_button, t,
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2)), colors.black, colors.white,
+            colors.light_gray, colors.green, (func, (game, True)), padding=(20, 10), outline_width=3))
+        
+        # Creates exit button
+        exit_menu_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 30, (0, 0, 150), (exit_menu_button, "text", "Exit to Menu"))
+        def func(g, x):
+            g.scene_manager.state.next_state = "main menu"
+            g.scene_manager.state.create = x
+        game.add_action(game.actions.CreateButton(exit_menu_button, t,
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2 + 100)), colors.black, colors.white,
+            colors.light_gray, colors.green, (func, (game, True)), padding=(20, 10), outline_width=3))
+
+        exit_game_button = game.get_unique_id()
+        t = game.ui.Text("couriernew", 30, (0, 0, 150), (exit_game_button, "text", "Exit Game"))
+        game.add_action(game.actions.CreateButton(exit_game_button, t,
+            Anchor("center", (game.screen.get_width() // 2, game.screen.get_height() // 2 + 200)), colors.black, colors.white,
+            colors.light_gray, colors.green, (game.add_action, game.actions.Quit()), padding=(20, 10), outline_width=3))
+    
+    def update(self, frame_time):
+        self.game.action_handler.handle_actions()
+    
+    def get_event(self, event):
+        if event.type == KEYDOWN and event.key == K_ESCAPE:
+            self.next_state = "game"
+            self.switch = True
+        self.game.action_handler.get_player_input(event)
+    
+    def draw(self):
+        self.game.screen.fill(colors.white)
+        self.game.get_systems()["ui"].update_and_draw()
+
+class Game(GameState):
+    def __init__(self):
+        super().__init__()
+        self.next_state = "pause menu"
         self.fps_text = None
     
     def start(self, game):
@@ -221,7 +273,7 @@ class Game(GameState):
         for i in range(5):
             enemy_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEnemy(enemy_id, Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000)), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
-            game.add_action(game.actions.StartFiringBarrels(enemy_id))
+            #game.add_action(game.actions.StartFiringBarrels(enemy_id))
 
         game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
@@ -238,10 +290,9 @@ class Game(GameState):
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_ESCAPE:
-            pygame.quit()
-            sys.exit()
-        elif event.type == KEYDOWN and event.key == K_RETURN:
+            self.next_state = "pause menu"
             self.create = True
+        
         self.game.action_handler.get_player_input(event)
 
     def update(self, frame_time):
@@ -273,5 +324,6 @@ class Game(GameState):
 
 states = {
     "main menu":MainMenu(),
-    "game":Game()
+    "game":Game(),
+    "pause menu":PauseMenu()
 }

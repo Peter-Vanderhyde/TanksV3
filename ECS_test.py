@@ -15,11 +15,17 @@ from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
+pygame.mixer.init()
 
 #TODO Create pause menu
 # Make the particles darker
 # Make the collectible particles green
 # Make a random chance to drop and random amount of them
+# Make a ring wall
+# Make small enemies that slowly go for player
+# Explosions consist of randomly orange particles going from color to gray and shrinking
+# Also just smoke particles (But not too many)
+# Make the experience indicator be on the tank's body
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
@@ -49,6 +55,13 @@ def load_animation_images():
         animation_images.update({path_string:image})
     
     return animation_images
+
+def load_sounds():
+    sounds = {}
+    for sound in settings.SOUNDS:
+        sounds[sound[0]] = pygame.mixer.Sound(settings.SOUND_PATH + "/" + sound[1])
+    
+    return sounds
 
 class Container:
     def __init__(self, state_container):
@@ -108,6 +121,7 @@ class Game(Container):
 
         self.images = {}
         self.animation_images = {}
+        self.sounds = {}
         self.dt = 0.01
         self.accumulator = 0.0
 
@@ -198,12 +212,13 @@ class Game(Container):
 
         self.action_handler.add_action(action)
     
-    def update_images(self, new_images_dict, new_anim_images_dict):
+    def update_images_and_sounds(self, new_images_dict, new_anim_images_dict, new_sounds_dict):
         """Takes a dictionaries of images and adds them to the dictionaries of images
         and animation_images."""
 
         self.images.update(new_images_dict)
         self.animation_images.update(new_anim_images_dict)
+        self.sounds.update(new_sounds_dict)
     
     def resync_components(self):
         time_since_save = time.time() - self.state_container.time_of_save
@@ -282,7 +297,7 @@ class Camera:
 
 def create_game_instance(scene_manager):
     game = Game(scene_manager.screen, settings.COLLISION_GRID_WIDTH, scene_manager)
-    game.update_images(load_images(), load_animation_images())
+    game.update_images_and_sounds(load_images(), load_animation_images(), load_sounds())
     return game
 
 if __name__ == "__main__":

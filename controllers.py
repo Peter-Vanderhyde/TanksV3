@@ -40,9 +40,7 @@ class PlayerController:
     def get_action(self, event):
         action = self.game.actions
         if event.type == KEYDOWN:
-            if event.key == K_ESCAPE:
-                return action.Quit()
-            elif event.key == self.move_keys["left"]:
+            if event.key == self.move_keys["left"]:
                 return action.MoveLeft(self.id, True)
             elif event.key == self.move_keys["right"]:
                 return action.MoveRight(self.id, True)

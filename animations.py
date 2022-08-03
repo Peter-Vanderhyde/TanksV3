@@ -103,6 +103,9 @@ tank_animation = {
                     },
                     "body":{
                         "scale":1.5
+                    },
+                    "sound":{
+                        "name":"pop_low"
                     }
                 }
             }
@@ -121,6 +124,10 @@ tank_animation = {
         "initial frame":{
             "barrel":{
                 "image":"0"
+            },
+            "sound":{
+                "name":"pop_high",
+                "volume":0.3
             }
         },
         "frames":[

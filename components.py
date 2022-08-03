@@ -190,10 +190,11 @@ class Animator(Component):
         self.current_animations.append(animation)
         self.animation_states.append({
             "animation":animation,
-            "current_frame":None,
-            "start_time":None,
-            "frame_start_time":None,
-            "previous_states":{}
+            "current frame":None,
+            "start time":None,
+            "frame start time":None,
+            "previous states":{},
+            "played sound":False
         })
         self.duration_multipliers.append(duration_multiplier)
     
@@ -545,21 +546,22 @@ class AnimatorSystem(System):
                     animation_properties = game.animations[anim_set][current_animation]
                     duration = animation_properties["duration"] * animation_duration_multiplier
                     state = animation_state
-                    if state["start_time"] == None:
-                        state["start_time"] = time.time()
-                        state["frame_start_time"] = time.time()
-                        state["current_frame"] = 0
-                        state["previous_states"] = {}
+                    if state["start time"] == None:
+                        state["start time"] = time.time()
+                        state["frame start time"] = time.time()
+                        state["current frame"] = 0
+                        state["previous states"] = {}
+                        state["played sound"] = False
                         self.apply_frame(component, state, animation_properties["initial frame"])
                         if duration == 0:
                             self.end_animation(component, state)
                             if "done with animation" in component.current_animations:
                                 break
                     elif duration > 0:
-                        frame = animation_properties["frames"][state["current_frame"]]
+                        frame = animation_properties["frames"][state["current frame"]]
                         frame_duration = duration * frame["delay"]
-                        elapsed = time.time() - state["frame_start_time"]
-                        if time.time() - state["start_time"] >= duration:
+                        elapsed = time.time() - state["frame start time"]
+                        if time.time() - state["start time"] >= duration:
                             self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                             self.end_animation(component, state)
                             if "done with animation" in component.current_animations:
@@ -567,10 +569,10 @@ class AnimatorSystem(System):
                             continue
                         elif elapsed >= frame_duration and visible:
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
-                                frame = animation_properties["frames"][state["current_frame"]]
+                                frame = animation_properties["frames"][state["current frame"]]
                                 frame_duration = duration * frame["delay"]
-                                elapsed = time.time() - state["frame_start_time"]
-                                if time.time() - state["start_time"] >= duration:
+                                elapsed = time.time() - state["frame start time"]
+                                if time.time() - state["start time"] >= duration:
                                     self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                                     self.end_animation(component, state)
                                     if "done with animation" in component.current_animations:
@@ -587,9 +589,24 @@ class AnimatorSystem(System):
         graphics = component.graphics_component
         images = component.images
         for image, properties in frame.items():
-            state["previous_states"].setdefault(image, {})
+            if image == "sound":
+                name = ""
+                volume = 1.0
+                for property, value in properties.items():
+                    if property == "name":
+                        name = value
+                    elif property == "volume":
+                        volume = value
+                
+                if volume != 1.0:
+                    pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
+                
+                pygame.mixer.Sound.play(component.game.sounds[name])
+                continue
+
+            state["previous states"].setdefault(image, {})
             for property, value in properties.items():
-                state["previous_states"][image][property] = value
+                state["previous states"][image][property] = value
                 graphics_image_index = images[image]
                 if property == "image":
                     if value != None:
@@ -604,7 +621,19 @@ class AnimatorSystem(System):
 
     def iterate_frame(self, component, state, frame, percent):
         for image, properties in frame.items():
-            previous_props = state["previous_states"][image]
+            if image == "sound":
+                if not state["played sound"]:
+                    name = ""
+                    for property, value in properties.items():
+                        if property == "name":
+                            name = value
+                        
+                    pygame.mixer.Sound.play(component.game.sounds[name])
+                    state["played sound"] = True
+                
+                continue
+            
+            previous_props = state["previous states"][image]
             for property, value in properties.items():
                 graphics_image_index = component.images[image]
                 try:
@@ -619,13 +648,14 @@ class AnimatorSystem(System):
 
     def go_to_next_frame(self, component, state, animation_properties, frame, frame_duration, elapsed):
         self.apply_frame(component, state, frame["properties"])
-        if state["current_frame"] + 1 == len(animation_properties["frames"]):
+        if state["current frame"] + 1 == len(animation_properties["frames"]):
             self.end_animation(component, state)
             return False
         else:
             past = elapsed - frame_duration
-            state["current_frame"] += 1
-            state["frame_start_time"] = time.time() - past
+            state["current frame"] += 1
+            state["frame start time"] = time.time() - past
+            state["played sound"] = False
             return True
     
     def end_animation(self, component, state):
@@ -650,7 +680,7 @@ class AnimatorSystem(System):
             component.animation_states.remove(state)
             component.graphics_component.reset_edits([i for i, x in enumerate(component.game.animations[component.animation_set]["indexes"]) if x != None])
         else:
-            state["start_time"] = None
+            state["start time"] = None
 
 class UISystem(DisplayedSystem):
     def __init__(self):

@@ -73,8 +73,7 @@ def tank_death(component):
         rotation=[0, 360],
         scale=[1, 1.5],
         speed=[50, 500],
-        spin_rate=[10, 50],
-        collide=True)
+        spin_rate=[10, 50])
     component.game.helpers.spawn_particles(collider,
         1,
         "barrel",

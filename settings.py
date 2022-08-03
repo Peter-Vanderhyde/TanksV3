@@ -6,6 +6,7 @@ monitor = pygame.display.Info()
 SCREEN_SIZE = (monitor.current_w - 50, monitor.current_h - 75)
 IMAGE_PATH = "images/"
 ANIMATION_PATH = "animations/"
+SOUND_PATH = "sounds/"
 # (<name>, <alpha>, <colorkey>)
 ASSETS = (
     ("barrel", True, white),
@@ -20,14 +21,26 @@ ASSETS = (
     ("particle_2_player", True, white),
     ("particle_3_enemy", True, white),
     ("particle_3_player", True, white),
+    ("particle_debris_enemy", True, white),
+    ("particle_debris_2_enemy", True, white),
+    ("particle_debris_3_enemy", True, white),
+    ("particle_debris_player", True, white),
+    ("particle_debris_2_player", True, white),
+    ("particle_debris_3_player", True, white),
     ("square_small", True)
 )
 
+SOUNDS = (
+    ("pop_low", "pop_low.mp3"),
+    ("pop_med", "pop_med.mp3"),
+    ("pop_high", "pop_high.mp3"),
+)
+
 PARTICLES = {
-    "body_enemy": ["particle_enemy", "particle_2_enemy"],
-    "bullet_enemy": ["particle_2_enemy", "particle_3_enemy"],
-    "body_player": ["particle_player", "particle_2_player"],
-    "bullet_player": ["particle_2_player", "particle_3_player"],
+    "body_enemy": ["particle_debris_enemy", "particle_debris_2_enemy"],
+    "bullet_enemy": ["particle_debris_2_enemy", "particle_debris_3_enemy"],
+    "body_player": ["particle_debris_player", "particle_debris_2_player"],
+    "bullet_player": ["particle_debris_2_player", "particle_debris_3_player"],
     "barrel":["particle_barrel"]
 }
 
