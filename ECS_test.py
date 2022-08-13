@@ -17,7 +17,9 @@ from pygame.math import Vector2
 pygame.init()
 pygame.mixer.init()
 
-#TODO Create pause menu
+#TODO
+# Need to readjust the lerp movement now that dt is different
+# Create pause menu (With game in background?)
 # Make the particles darker
 # Make the collectible particles green
 # Make a random chance to drop and random amount of them
@@ -234,10 +236,10 @@ class Game(Container):
         for animator in self.get_systems()["animator"].components:
             if animator.id is not None:
                 for animation in animator.animation_states:
-                    if animation["start_time"] != None:
-                        animation["start_time"] += time_since_save
-                    if animation["frame_start_time"] != None:
-                        animation["frame_start_time"] += time_since_save
+                    if animation["start time"] != None:
+                        animation["start time"] += time_since_save
+                    if animation["frame start time"] != None:
+                        animation["frame start time"] += time_since_save
         
         for controller in self.get_systems()["controller"].components:
             if controller.id is not None and controller.controller_name == "player":
