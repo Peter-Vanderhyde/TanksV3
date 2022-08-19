@@ -1,16 +1,35 @@
+from pathlib import Path
 import pygame
 import time
+import controllers
 import components
 import actions
 import colors
-import random
 import settings
 import spatial_hashing
 import helpers
+import animations
+import ui
+import state_machine
+from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
 pygame.init()
+pygame.mixer.init()
 
+#TODO
+# Make healthbars shrink toward the middle and add a damage shrinking red bar behind if really bored.
+# Make the collectible particles green
+# Make a random chance to drop and random amount of them
+# Make a ring wall
+# Make small enemies that slowly go for player
+# Explosions consist of randomly orange particles going from color to gray and shrinking
+# Also just smoke particles (But not too many)
+# Make the experience indicator be on the tank's body
+# Add a UI element for creating outlines and boxes that can have curved edges and such.
+# Make one such element for the main menu. Maybe use one in-game to display stats on the side.
+# (For crazy idea, instead of changing the background of the button rect so the background bleeds around the curved
+#  edge, try making the background transparent and drawing a completely different rect behind it with the same rounding)
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
@@ -21,7 +40,6 @@ def load_image(name, alpha=True, colorkey=()):
         image = pygame.image.load(settings.IMAGE_PATH + name + ".png").convert()
     return image
 
-
 def load_images():
     d = {}
     for asset in settings.ASSETS:
@@ -30,63 +48,120 @@ def load_images():
     
     return d
 
+def load_animation_images():
+    animation_images = {}
+    for path in Path(settings.ANIMATION_PATH).rglob("*.png"):
+        path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
+        # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
+        # animation, then the image name
+        image = pygame.image.load(path).convert_alpha()
+        image.set_colorkey((255, 255, 255))
+        animation_images.update({path_string:image})
+    
+    return animation_images
 
-class Game:
-    def __init__(self, screen, collision_grid_width):
+def load_sounds():
+    sounds = {}
+    for sound in settings.SOUNDS:
+        sounds[sound[0]] = pygame.mixer.Sound(settings.SOUND_PATH + "/" + sound[1])
+    
+    return sounds
+
+class Container:
+    def __init__(self, state_container):
+        self.state_container = state_container
+    
+    def get_systems(self):
+        return self.state_container.systems
+    
+    def get_component_index(self):
+        return self.state_container.component_index
+    
+    def get_system_index(self):
+        return self.state_container.system_index
+    
+    def get_entities(self):
+        return self.state_container.entities
+    
+    def get_entity_props(self):
+        return self.state_container.entity_props
+    
+    def get_living_entities(self):
+        return self.state_container.living_entities
+    
+    def get_last_id(self):
+        return self.state_container.last_id
+    
+    def get_collision_maps(self):
+        return self.state_container.collision_maps
+    
+    def set_living_entities(self, living_entities):
+        self.state_container.living_entities = living_entities
+    
+    def set_last_id(self, last_id):
+        self.state_container.last_id = last_id
+
+class Game(Container):
+    def __init__(self, screen, collision_grid_width, scene_manager):
+        self.screen = screen
+        self.clock = pygame.time.Clock()
+        self.collision_grid_width = collision_grid_width
+        self.scene_manager = scene_manager
+
         self.actions = actions
         self.colors = colors
+        self.settings = settings
         self.helpers = helpers
+        self.controllers = controllers
         self.components = components
-        #TODO Fix this action controller system at some point
-        self.action_handler = actions.ActionHandler(self, components.controller_sys)
-        self.screen = screen
+        self.animations = animations.animations
+        self.states = state_machine.states
+        self.ui = ui
 
-        self.collision_grid_width = collision_grid_width
+        #TODO Fix this action controller system at some point
+        self.action_handler = actions.ActionHandler(self)
+        self.camera = Camera(self)
+        self.grid_manager = spatial_hashing.GridManager
 
         self.images = {}
-        self.entities = {}
-        self.entity_props = {}
-        self.living_entities = 0
-        self.last_id = 0
-
+        self.animation_images = {}
+        self.sounds = {}
         self.dt = 0.01
-        self.last_time = time.time()
         self.accumulator = 0.0
 
-        self.camera = Camera(self)
-
-        GM = spatial_hashing.GridManager
-        self.collision_maps = {}
-        for category in settings.COLLISION_CATEGORIES:
-            self.collision_maps[category] = GM(self.collision_grid_width)
+        # This now holds all of the things that change from state to state
+        # so when saving a state, this is what you save.
+        state_container = state_machine.StateContainer(self)
+        super().__init__(state_container)
     
     def get_unique_id(self):
         """Returns an int that's unique each time it's called"""
 
-        self.last_id += 1
-        return self.last_id - 1
+        last_id = self.get_last_id()
+        self.set_last_id(last_id + 1)
+        return last_id
     
     def is_alive(self, entity_id):
         """Return whether the given entity exists in entities still"""
 
-        return entity_id in self.entities
+        return entity_id in self.get_entities()
     
     def create_entity(self, entity_id):
         """Adds a new id to the list of entities without any components yet"""
 
         # Create [-1, -1, -1, etc] because we don't know what components it will have
-        component_indexes = [-1] * len(components.system_index)
+        component_indexes = [-1] * len(self.get_system_index())
         # Each entity is just an id number connected to a list of component indexes
-        self.entities[entity_id] = component_indexes
-        self.living_entities += 1
-        self.entity_props[entity_id] = {}
+        self.get_entities()[entity_id] = component_indexes
+        self.set_living_entities(self.get_living_entities() + 1)
+        self.get_entity_props()[entity_id] = {}
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
         """Changes the value for the given component in that entity's list of
         component indexes from -1 to whatever the next open spot is"""
 
-        index = components.systems[component_name].add_component(self, entity_id, *args, **kwargs)
-        self.entities[entity_id][components.component_index[component_name]] = index
+        index = self.get_systems()[component_name].add_component(self, entity_id, *args, **kwargs)
+        self.get_entities()[entity_id][self.get_component_index()[component_name]] = index
         return entity_id
     
     def add_property(self, entity_id, property, value):
@@ -99,20 +174,29 @@ class Game:
         the list of entities."""
 
         try:
-            for i, index in enumerate(self.entities[entity_id]):
+            for i, index in enumerate(self.get_entities()[entity_id]):
                 if index != -1:
-                    components.system_index[i].remove_component(index)
-            self.entities.pop(entity_id)
-            self.entity_props.pop(entity_id)
-            self.living_entities -= 1
+                    self.get_system_index()[i].remove_component(index)
+            self.get_entities().pop(entity_id)
+            self.get_entity_props().pop(entity_id)
+            self.set_living_entities(self.get_living_entities() - 1)
         except:
             pass
+    
+    def has_component(self, entity_id, component_name):
+        """Checks if an entity has a component without raising an error."""
+
+        try:
+            component = self.get_component(entity_id, component_name)
+            return True
+        except KeyError:
+            return False
 
     def get_component(self, entity_id, component_name):
         """Gives a reference of a component of an entity."""
 
         try:
-            component = self.components.systems[component_name].components[self.entities[entity_id][components.component_index[component_name]]]
+            component = self.get_systems()[component_name].components[self.get_entities()[entity_id][self.get_component_index()[component_name]]]
             return component
         except KeyError:
             raise KeyError(f"Component `{component_name}` or entity `{entity_id}` does not exist.")
@@ -120,23 +204,48 @@ class Game:
     def get_property(self, entity_id, property):
         """Gives a reference of a property of an entity."""
 
-        return self.entity_props[entity_id][property]
+        return self.get_entity_props()[entity_id][property]
     
     def set_property(self, entity_id, property, value):
         """Changes the value of an entity's property."""
 
-        self.entity_props[entity_id][property] = value
+        self.get_entity_props()[entity_id][property] = value
     
     def add_action(self, action):
         """Append an action onto the handler's queue to be executed next cycle."""
 
         self.action_handler.add_action(action)
     
-    def update_images(self, new_images_dict):
-        """Takes a dictionary of images and adds it to the dictionary of images."""
+    def update_images_and_sounds(self, new_images_dict, new_anim_images_dict, new_sounds_dict):
+        """Takes a dictionaries of images and adds them to the dictionaries of images
+        and animation_images."""
 
         self.images.update(new_images_dict)
-
+        self.animation_images.update(new_anim_images_dict)
+        self.sounds.update(new_sounds_dict)
+    
+    def resync_components(self):
+        time_since_save = time.time() - self.state_container.time_of_save
+        for barrel_manager in self.get_systems()["barrel manager"].components:
+            if barrel_manager.id is not None:
+                for barrel in barrel_manager.barrels:
+                    barrel[0] = barrel[0] + time_since_save
+        
+        for life_timer in self.get_systems()["life timer"].components:
+            if life_timer.id is not None:
+                life_timer.start_time += time_since_save
+        
+        for animator in self.get_systems()["animator"].components:
+            if animator.id is not None:
+                for animation in animator.animation_states:
+                    if animation["start time"] != None:
+                        animation["start time"] += time_since_save
+                    if animation["frame start time"] != None:
+                        animation["frame start time"] += time_since_save
+        
+        for controller in self.get_systems()["controller"].components:
+            if controller.id is not None and controller.controller_name == "player":
+                self.add_action(self.actions.StopFiringBarrels(controller.id))
 
 class Camera:
     def __init__(self, game, target_id=None):
@@ -190,64 +299,15 @@ class Camera:
             pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
-def show_fps(fps_font):
-    """This function just displays the current fps in the topleft corner."""
-    
-    clock.tick()
-    font = fps_font.render(f"Entities: {game.living_entities}, FPS: {round(clock.get_fps())}", False, colors.blue)
-    fps_rect = font.get_rect()
-    fps_rect.topleft = 0, 0
-    screen.blit(font, fps_rect)
-
+def create_game_instance(scene_manager):
+    game = Game(scene_manager.screen, settings.COLLISION_GRID_WIDTH, scene_manager)
+    game.update_images_and_sounds(load_images(), load_animation_images(), load_sounds())
+    return game
 
 if __name__ == "__main__":
-    clock = pygame.time.Clock()
-    FPS_FONT = pygame.font.SysFont("couriernew", 15)
     screen = pygame.display.set_mode(settings.SCREEN_SIZE, pygame.RESIZABLE)
 
-    game = Game(screen, settings.COLLISION_GRID_WIDTH)
     pygame.event.set_allowed([KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
-    game.update_images(load_images())
-    id = game.get_unique_id()
-    game.add_action(actions.SpawnPlayer(id, Vector2(0, 0), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-    game.add_action(actions.FocusCamera(id, True))
-    for i in range(1):
-        enemy_id = game.get_unique_id()
-        game.add_action(actions.SpawnEnemy(enemy_id, Vector2(random.randint(-500, 500), random.randint(-500, 500)), 0, 1, settings.PLAYER_MAX_SPEED, settings.PLAYER_ACCEL, settings.PLAYER_DECEL, settings.PLAYER_FRICTION))
-        game.add_action(actions.StartFiringBarrels(enemy_id))
-
-    helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
-
-    game.action_handler.handle_actions()
-
-    while True:
-        current_time = time.time()
-        frame_time = current_time - game.last_time
-        game.last_time = current_time
-        game.accumulator += frame_time
-        components.life_timer_sys.update()
-
-        game.action_handler.get_player_input()
-        components.controller_sys.update()
-        components.barrel_manager_sys.update()
-
-
-        while game.accumulator >= game.dt:
-            try:
-                game.get_component(enemy_id, "transform").rotation += 100 * game.dt
-            except:
-                pass
-            components.physics_sys.update(game.dt)
-            game.camera.update()
-            components.collider_sys.update()
-            game.action_handler.handle_actions()
-            game.accumulator -= game.dt
-        
-        screen.fill(colors.white)
-        game.camera.draw_grid()
-        components.graphics_sys.update()
-        components.health_bar_sys.update()
-        pygame.draw.rect(screen, colors.black, (1, 1, screen.get_width(), screen.get_height()), 3)
-        show_fps(FPS_FONT)
-        pygame.display.update()
+    scene_manager = state_machine.SceneManager(screen, "main menu")
+    scene_manager.start()

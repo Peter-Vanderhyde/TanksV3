@@ -3,6 +3,7 @@ import settings
 from pygame.math import Vector2
 import sys
 import time
+from ui import Anchor
 
 '''
 -----------
@@ -27,7 +28,8 @@ Destroy: (id)
 
 class Action:
     def __init__(self, id):
-        """Takes in the id that this action is applying to"""
+        """Takes in the id that this action is applying to.
+        It then checks if that id is still alive before making changes to it."""
         self.id = id
 
     def execute(self, game):
@@ -120,15 +122,16 @@ class SpawnPlayer(Action):
 
         game.add_component(self.player_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
-        barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.player_id, "graphics", 1, barrels + [(game.images["body_player"], Vector2(0, 0), 0, 1)], game.get_component(self.player_id, "transform"))
+        barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
+        game.add_component(self.player_id, "graphics", 1, barrels + [[game.images["body_player"], Vector2(0, 0), 0, 1]], game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "animator", "tank", ["spawn"], game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.player_id, "transform"))
-        game.add_component(self.player_id, "controller", game.components.PlayerController(game, self.player_id, settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform")))
+        game.add_component(self.player_id, "controller", "player", settings.PLAYER_MOVE_KEYS, game.get_component(self.player_id, "transform"))
         # [last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "barrel manager", barrels, False, "bullet_player", game.get_component(self.player_id, "graphics"), game.get_component(self.player_id, "transform"), game.get_component(self.player_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.player_id, "collider", self.player_id, 21, Vector2(0, 0), "actors", [], "body_player", game.get_component(self.player_id, "transform"))
+        game.add_component(self.player_id, "collider", self.player_id, 21 * game.get_component(self.player_id, "transform").scale, Vector2(0, 0), "actors", ["particles"], "body_player", game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.player_id, "transform"))
 
 class SpawnEnemy(Action):
@@ -155,15 +158,16 @@ class SpawnEnemy(Action):
 
         game.add_component(self.enemy_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         # (image, offset_vector, rotation_offset, scale_offset)
-        barrels = [(game.images["barrel"], Vector2(0, 0), 0, 1)]
-        game.add_component(self.enemy_id, "graphics", 1, barrels + [(game.images["body_enemy"], Vector2(0, 0), 0, 1)], game.get_component(self.enemy_id, "transform"))
+        barrels = [[game.images["barrel"], Vector2(0, 0), 0, 1]]
+        game.add_component(self.enemy_id, "graphics", 1, barrels + [[game.images["body_enemy"], Vector2(0, 0), 0, 1]], game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "animator", "tank", ["spawn"], game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, self.accel, self.decel, self.friction, game.get_component(self.enemy_id, "transform"))
-        game.add_component(self.enemy_id, "controller", game.components.EnemyController(game, self.enemy_id, game.get_component(self.enemy_id, "transform")))
+        game.add_component(self.enemy_id, "controller", "enemy", game.get_component(self.enemy_id, "transform"))
         # [scale, angle_offset, last_shot, cooldown, image_index]
         barrels = [[0, 0.2, 0]]
-        game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "barrel manager", barrels, False, "bullet_enemy", game.get_component(self.enemy_id, "graphics"), game.get_component(self.enemy_id, "transform"), game.get_component(self.enemy_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.enemy_id, "collider", self.enemy_id, 21, Vector2(0, 0), "actors", [], "body_enemy", game.get_component(self.enemy_id, "transform"))
+        game.add_component(self.enemy_id, "collider", self.enemy_id, 21 * game.get_component(self.enemy_id, "transform").scale, Vector2(0, 0), "actors", ["particles"], "body_enemy", game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.enemy_id, "transform"))
 
 class SpawnBullet(Action):
@@ -180,11 +184,14 @@ class SpawnBullet(Action):
         self.rotational_force = rotational_force
     
     def execute_action(self, game):
+        if not game.is_alive(self.owner_id):
+            return
         game.create_entity(self.bullet_id)
         game.add_component(self.bullet_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.projectile_name], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "physics", self.angle, (self.speed, self.speed, self.speed), self.rotational_force, 1, 1, 0, game.get_component(self.bullet_id, "transform"))
-        game.add_component(self.bullet_id, "life timer", time.time(), 3)
+        game.add_component(self.bullet_id, "animator", "bullet", [], game.get_component(self.bullet_id, "graphics"), game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "life timer", time.time(), 3, game.get_component(self.bullet_id, "animator"))
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.bullet_id, "collider", self.owner_id, 10, Vector2(0, 0), "projectiles", ["actors", "projectiles", "shapes"], self.projectile_name, game.get_component(self.bullet_id, "transform"))
         game.add_property(self.bullet_id, "damage", game.get_property(self.owner_id, "damage"))
@@ -206,12 +213,12 @@ class SpawnShape(Action):
         game.add_component(self.shape_id, "graphics", 0, [(game.images["square_small"], Vector2(0, 0), 0, 1)], game.get_component(self.shape_id, "transform"))
         game.add_component(self.shape_id, "physics", self.rotation, (0, 0, 0), self.spin_rate, 1, 0.7, settings.PARTICLE_FRICTION, game.get_component(self.shape_id, "transform"), self.spin_friction)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
-        game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", ["projectiles"], "", game.get_component(self.shape_id, "transform"))
+        game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", [], "", game.get_component(self.shape_id, "transform"))
         game.add_property(self.shape_id, "xp", self.xp)
         game.add_property(self.shape_id, "health", 30)
 
 class SpawnParticle(Action):
-    def __init__(self, particle_id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime, rotational_force=0, rotation_friction=True, friction=settings.PARTICLE_FRICTION):
+    def __init__(self, particle_id, image_string, spawn_point, rotation, scale, speeds, decel, lifetime, rotational_force=0, rotation_friction=True, friction=settings.PARTICLE_FRICTION, collide=False):
         super().__init__(None)
         self.particle_id = particle_id
         self.image_string = image_string
@@ -224,19 +231,31 @@ class SpawnParticle(Action):
         self.rotational_force = rotational_force
         self.rotation_friction = rotation_friction
         self.friction = friction
+        self.collide = collide
     
     def execute_action(self, game):
         game.create_entity(self.particle_id)
         game.add_component(self.particle_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
         game.add_component(self.particle_id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.particle_id, "transform"))
+        game.add_component(self.particle_id, "animator", "particle", [], game.get_component(self.particle_id, "graphics"), game.get_component(self.particle_id, "transform"))
         game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, self.friction, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
-        game.add_component(self.particle_id, "life timer", time.time(), self.lifetime)
+        game.add_component(self.particle_id, "life timer", time.time(), self.lifetime, game.get_component(self.particle_id, "animator"))
+        if self.collide:
+            if "particle_enemy" in self.image_string or "particle_player" in self.image_string:
+                radius = 7 * self.scale
+            elif "particle_2" in self.image_string:
+                radius = 6 * self.scale
+            elif "particle_3" in self.image_string:
+                radius = 3 * self.scale
+            game.add_component(self.particle_id, "collider", self.particle_id, radius, Vector2(0, 0), "particles", [], "", game.get_component(self.particle_id, "transform"))
 
 class StartFiringBarrels(Action):
     def __init__(self, id):
         super().__init__(id)
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = True
 
@@ -245,6 +264,8 @@ class StopFiringBarrels(Action):
         super().__init__(id)
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         manager = game.get_component(self.id, "barrel manager")
         manager.shooting = False
 
@@ -273,6 +294,8 @@ class Destroy(Action):
         self.change_focus = change_focus
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         game.destroy_entity(self.id)
         if self.change_focus != None:
             game.add_action(game.actions.FocusCamera(self.change_focus))
@@ -285,25 +308,76 @@ class Damage(Action):
         self.damage = damage
     
     def execute_action(self, game):
+        if not game.is_alive(self.id):
+            return
         health = game.get_property(self.id, "health")
         game.set_property(self.id, "health", health - self.damage)
 
+class CreateText(Action):
+    def __init__(self, text_id, font_name, size, color, reflect_prop=(), anchor=Anchor("top left", (0, 0))):
+        super().__init__(None)
+        self.text_id = text_id
+        self.font_name = font_name
+        self.size = size
+        self.color = color
+        self.get_id = reflect_prop[0]
+        self.get_prop = reflect_prop[1]
+        if self.get_id == self.text_id:
+            self.text = reflect_prop[2]
+        # This will be what entity it will get the text from, and what property to use.
+        # e.g. (id, prop) -> (46, "health")
+        # (self.id, "title", "Click Me")
+        # When just getting text that will not change, use the component's id as the first argument, pick a prop name,
+        # and put the text as the last arg.
+        self.anchor = anchor
+    
+    def execute_action(self, game):
+        game.create_entity(self.text_id)
+        if self.get_id == self.text_id:
+            game.add_property(self.get_id, self.get_prop, self.text)
+        
+        game.add_component(self.text_id, "ui", game.ui.Text(self.font_name, self.size, self.color, (self.get_id, self.get_prop), self.anchor))
+
+class CreateButton(Action):
+    def __init__(self, button_id, text_obj, anchor, outline_color, default_color, hover_color, pressed_color,
+            change_on_click, padding=(0, 0), edge_rounding=2, outline_width=2):
+        super().__init__(None)
+        self.button_id = button_id
+        self.text_obj = text_obj
+        self.anchor = anchor
+        self.outline_color = outline_color
+        self.default_color = default_color
+        self.hover_color = hover_color
+        self.pressed_color = pressed_color
+        self.change_on_click = change_on_click
+        self.padding = padding
+        self.edge_rounding = edge_rounding
+        self.outline_width = outline_width
+    
+    def execute_action(self, game):
+        game.create_entity(self.button_id)
+        if self.text_obj.reflect_prop[0] == self.button_id:
+            game.add_property(*self.text_obj.reflect_prop)
+            self.text_obj.reflect_prop = (self.button_id, self.text_obj.reflect_prop[1])
+            self.text_obj.set_text(game.get_property(*self.text_obj.reflect_prop))
+        
+        game.add_component(self.button_id, "ui", game.ui.Button(self.text_obj, self.anchor, self.outline_color, self.default_color,
+            self.hover_color, self.pressed_color, self.change_on_click, self.padding, self.edge_rounding, self.outline_width))
 
 
 class ActionHandler:
-    def __init__(self, game, controller_sys, actions=[]):
+    def __init__(self, game, actions=[]):
         self.game = game
-        self.controller_sys = controller_sys
+        self.controller_sys = None
         self.actions = actions
     
-    def get_player_input(self):
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            else:
-                self.controller_sys.get_action_from_event(event)
+    def set_controller_system(self, controller_sys):
+        self.controller_sys = controller_sys
+    
+    def get_player_input(self, event):
+        if event.type in [pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
+            self.game.get_systems()["ui"].check_ui_elements_at_pos(event)
+        self.controller_sys.get_action_from_event(event)
     
     def add_action(self, action):
         self.actions.append(action)
