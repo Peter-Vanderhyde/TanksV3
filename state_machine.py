@@ -211,9 +211,14 @@ class PauseMenu(GameState):
     def __init__(self):
         super().__init__()
         self.next_state = "main menu"
+        self.background = pygame.Surface
     
     def start(self, game):
         super().start(game)
+        self.background = pygame.display.get_surface().copy()
+        temp = pygame.Surface((self.background.get_width(), self.background.get_height())).convert_alpha()
+        temp.fill((0, 0, 0, 50))
+        self.background.blit(temp, (0, 0))
         title = game.get_unique_id()
         game.add_action(game.actions.CreateText(title, "segoeprint", 40, colors.black, (title, "title", "Pause Menu"),
             Anchor("center", (game.screen.get_width() // 2 - 4, game.screen.get_height() // 4 + 4))))
@@ -256,7 +261,8 @@ class PauseMenu(GameState):
         self.game.action_handler.get_player_input(event)
     
     def draw(self):
-        self.game.screen.fill(colors.white)
+        #self.game.screen.fill(colors.white)
+        self.game.screen.blit(self.background, (0, 0))
         self.game.get_systems()["ui"].update_and_draw()
 
 class Game(GameState):

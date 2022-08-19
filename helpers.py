@@ -14,7 +14,7 @@ def spawn_shapes(game, amount, spawn_range):
         spin_friction = False
         game.add_action(game.actions.SpawnShape(id, spawn, rotation, scale, xp, spin_rate, spin_friction))
 
-def spawn_particles(component, amount, source_string, spawn_point, rotation, scale, speed, lifetime, spin_rate=0, decel=0.07, spin_friction=True, friction=settings.PARTICLE_FRICTION, collide=False):
+def spawn_particles(component, amount, source_string, spawn_point, rotation, scale, speed, lifetime, spin_rate=0, decel=0.05, spin_friction=True, friction=settings.PARTICLE_FRICTION, collide=False):
     game = component.game
     args = [spawn_point, rotation, scale, [speed, speed, 0], decel, lifetime, spin_rate, spin_friction, friction, collide]
     for i in range(amount):

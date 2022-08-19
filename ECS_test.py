@@ -18,9 +18,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Need to readjust the lerp movement now that dt is different
-# Create pause menu (With game in background?)
-# Make the particles darker
+# Make healthbars shrink toward the middle and add a damage shrinking red bar behind if really bored.
 # Make the collectible particles green
 # Make a random chance to drop and random amount of them
 # Make a ring wall
@@ -28,6 +26,10 @@ pygame.mixer.init()
 # Explosions consist of randomly orange particles going from color to gray and shrinking
 # Also just smoke particles (But not too many)
 # Make the experience indicator be on the tank's body
+# Add a UI element for creating outlines and boxes that can have curved edges and such.
+# Make one such element for the main menu. Maybe use one in-game to display stats on the side.
+# (For crazy idea, instead of changing the background of the button rect so the background bleeds around the curved
+#  edge, try making the background transparent and drawing a completely different rect behind it with the same rounding)
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
