@@ -163,6 +163,8 @@ class HealthBar(Component):
         self.height = height
         self.offset = offset
         self.transform_component = transform_component
+        # Creates a property that tracks the last health value so a damage bar can be made behind the health bar
+        self.game.add_property(self.id, "ghost health", self.game.get_property(self.id, "health"))
 
 class Animator(Component):
     def __init__(self, game, next_available):
@@ -515,17 +517,35 @@ class HealthBarSystem(DisplayedSystem):
             if component.id is not None:
                 game = component.game
                 transform = component.transform_component
-                rect = Rect(0, 0, component.width, component.height)
-                rect.center = (transform.x + component.offset.x - game.camera.corner.x,
+                center = (transform.x + component.offset.x - game.camera.corner.x,
                     transform.y + component.offset.y - game.camera.corner.y)
                 health = game.get_property(component.id, "health")
                 max_health = game.get_property(component.id, "max health")
                 if health < max_health:
-                    p = health / max_health
-                    width = p * component.width
-                    pygame.draw.rect(game.screen, game.colors.black, rect, 0, 2)
-                    width = p * (component.width - 2)
-                    pygame.draw.rect(game.screen, game.colors.green, ((rect.topleft[0] + 1, rect.topleft[1] + 1), (width, component.height - 2)), 0, 2)
+                    ghost_health = game.get_property(component.id, "ghost health")
+                    # Shrink the ghost health until it reaches the actual health
+                    shrink_by = max(min(0.05, ghost_health - health), (ghost_health - health) * 0.005)
+                    game.set_property(component.id, "ghost health", ghost_health - shrink_by)
+                    ghost_percent = ghost_health / max_health
+                    width = ghost_percent * component.width
+                    health_rect = Rect(0, 0, width, component.height)
+                    health_rect.center = center
+                    pygame.draw.rect(game.screen, game.colors.black, health_rect, 0, 2)
+                    health_percent = health / max_health
+                    if width - (health_percent * component.width) > 2:
+                        health_rect.width -= 2
+                        health_rect.height -= 2
+                        health_rect.center = center
+                        pygame.draw.rect(game.screen, game.colors.red, health_rect, 0, 2)
+                        width = health_percent * component.width
+                        health_rect = Rect(0, 0, width, component.height - 2)
+                        health_rect.center = center
+                        pygame.draw.rect(game.screen, game.colors.green, health_rect, 0, 2)
+                    else:
+                        health_rect.width -= 2
+                        health_rect.height -= 2
+                        health_rect.center = center
+                        pygame.draw.rect(game.screen, game.colors.green, health_rect, 0, 2)
 
 class AnimatorSystem(System):
     def __init__(self):

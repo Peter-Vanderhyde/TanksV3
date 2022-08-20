@@ -311,7 +311,7 @@ class Damage(Action):
         if not game.is_alive(self.id):
             return
         health = game.get_property(self.id, "health")
-        game.set_property(self.id, "health", health - self.damage)
+        game.set_property(self.id, "health", max(0, health - self.damage))
 
 class CreateText(Action):
     def __init__(self, text_id, font_name, size, color, reflect_prop=(), anchor=Anchor("top left", (0, 0))):

@@ -18,7 +18,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Make healthbars shrink toward the middle and add a damage shrinking red bar behind if really bored.
+# Make shapes destructible
 # Make the collectible particles green
 # Make a random chance to drop and random amount of them
 # Make a ring wall
