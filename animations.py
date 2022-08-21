@@ -14,7 +14,7 @@
 # spawn tank particles
 #TODO Change it so it can do things on whatever frame it wants to
 
-tank_animation = {
+player_tank_animation = {
     "indexes":["barrel", "body"],
     "spawn":{
         "duration":0.65,
@@ -166,7 +166,7 @@ tank_animation = {
         ]
     },
     "healing":{
-        "duration":0.2,
+        "duration":0.3,
         "initial frame":{
             "body":{
                 "image":"healing"
@@ -182,8 +182,28 @@ tank_animation = {
                 }
             }
         ]
+    },
+    "damaged":{
+        "duration":0.3,
+        "initial frame":{
+            "body":{
+                "image":"damaged"
+            }
+        },
+        "frames":[
+            {
+                "delay":1,
+                "properties":{
+                    "body":{
+                        "image":"normal"
+                    }
+                }
+            }
+        ]
     }
 }
+
+enemy_tank_animation = player_tank_animation
 
 particle_animation = {
     "indexes":["particle"],
@@ -247,7 +267,8 @@ effects_animation = {
         "on finish":["destroy component"],
         "initial frame":{
             "effect":{
-                "image":0
+                "image":0,
+                "scale":1
             }
         },
         "frames":[
@@ -255,7 +276,8 @@ effects_animation = {
                 "delay":0.2,
                 "properties":{
                     "effect":{
-                        "image":"1"
+                        "image":"1",
+                        "scale":1.1
                     }
                 }
             },
@@ -263,7 +285,8 @@ effects_animation = {
                 "delay":0.2,
                 "properties":{
                     "effect":{
-                        "image":"2"
+                        "image":"2",
+                        "scale":1.2
                     }
                 }
             },
@@ -271,7 +294,8 @@ effects_animation = {
                 "delay":0.2,
                 "properties":{
                     "effect":{
-                        "image":"3"
+                        "image":"3",
+                        "scale":1.3
                     }
                 }
             },
@@ -279,7 +303,8 @@ effects_animation = {
                 "delay":0.2,
                 "properties":{
                     "effect":{
-                        "image":"4"
+                        "image":"4",
+                        "scale":1.4
                     }
                 }
             },
@@ -287,16 +312,111 @@ effects_animation = {
                 "delay":0.2,
                 "properties":{
                     "effect":{
-                        "image":"4"
+                        "image":"4",
+                        "scale":1.5
                     }
                 }
             }
+        ]
+    },
+    "healing plus":{
+        "duration":0.25,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"healing_plus",
+                "scale":0
+            }
+        },
+        "frames":[
+            {
+                "delay":0.1,
+                "properties":{
+                    "effect":{
+                        "scale":1
+                    }
+                }
+            },
+            {
+                "delay":0.8,
+                "properties":{
+                    "effect":{
+                        "scale":1
+                    }
+                }
+            },
+            {
+                "delay":0.1,
+                "properties":{
+                    "effect":{
+                        "scale":0
+                    }
+                }
+            }
+        ]
+    },
+    "player spawn wave":{
+        "duration":0.75,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"wave_1",
+                "scale":1
+            }
+        },
+        "frames":[
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_2",
+                        "scale":1.2
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_3",
+                        "scale":1.4
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_4",
+                        "scale":1.6
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_5",
+                        "scale":1.8
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_5",
+                        "scale":2
+                    }
+                }
+            },
         ]
     }
 }
 
 animations = {
-    "tank":tank_animation,
+    "player tank":player_tank_animation,
+    "enemy tank":enemy_tank_animation,
     "particle":particle_animation,
     "bullet":bullet_animation,
     "effects":effects_animation

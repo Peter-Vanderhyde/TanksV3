@@ -18,7 +18,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Switch tank healing animation to the damage animation. Add separate effect for healing such as green +.
+# Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?
 # Make a random chance to drop and random amount of them

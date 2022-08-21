@@ -28,7 +28,7 @@ ASSETS = (
     ("particle_debris_2_player", True, white),
     ("particle_debris_3_player", True, white),
     ("square_small", True),
-    ("experience", True, white),
+    ("experience", True),
     ("effect_default", True, white)
 )
 

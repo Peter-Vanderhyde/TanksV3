@@ -46,6 +46,7 @@ def handle_collision(component_a, component_b):
             game.get_component(component_a.id, "animator").play("collided")
             damage = game.get_property(component_a.id, "damage")
             game.add_action(game.actions.Damage(parent_b_id, damage))
+            game.get_component(component_b.id, "animator").play("damaged")
             if game.get_property(component_b.id, "health") - damage <= 0:
                 if game.camera.target_id == component_b.collision_id:
                     game.add_action(game.actions.FocusCamera(component_a.collision_id))
@@ -67,8 +68,11 @@ def handle_collision(component_a, component_b):
             game.get_component(component_b.id, "animator").play("expired")
             game.set_property(component_a.id, "health", min(game.get_property(component_a.id, "health") + 2, 100))
             tran = game.get_component(component_b.id, "transform")
-            game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "collected experience", Vector2(tran.x, tran.y), 3))
+            game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "collected experience", Vector2(tran.x, tran.y), 1.5))
             game.get_component(component_a.id, "animator").play("healing")
+            tran = game.get_component(component_a.id, "transform")
+            game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "healing plus",
+                (random.randint(int(tran.x) - 20, int(tran.x) + 20), random.randint(int(tran.y) - 20, int(tran.y) + 20))))
 
 def tank_death(component):
     collider = component.game.get_component(component.id, "collider")
@@ -81,7 +85,8 @@ def tank_death(component):
         rotation=[0, 360],
         scale=[1, 1.5],
         speed=[10, 80],
-        spin_rate=[10, 50],
+        spin_rate=20,
+        spin_friction=False,
         collide=True)
     component.game.helpers.spawn_particles(collider,
         20,
