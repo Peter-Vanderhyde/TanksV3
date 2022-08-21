@@ -42,11 +42,11 @@ def handle_collision(component_a, component_b):
     game = component_a.game
     if component_a.collision_category == "projectiles":
         if component_b.collision_category == "actors":
+            game.get_component(component_a.id, "collider").inactive = True
             game.get_component(component_a.id, "animator").play("collided")
             damage = game.get_property(component_a.id, "damage")
             game.add_action(game.actions.Damage(parent_b_id, damage))
             if game.get_property(component_b.id, "health") - damage <= 0:
-                game.set_property(component_b.id, "health", 0)
                 if game.camera.target_id == component_b.collision_id:
                     game.add_action(game.actions.FocusCamera(component_a.collision_id))
                 
@@ -55,16 +55,34 @@ def handle_collision(component_a, component_b):
                 component_b.inactive = True
                 
         elif component_b.collision_category in ["projectiles", "shapes"]:
+            game.get_component(component_a.id, "collider").inactive = True
             game.get_component(component_a.id, "animator").play("collided")
+            if component_b.collision_category == "projectiles":
+                game.get_component(component_b.id, "collider").inactive = True
+                game.get_component(component_b.id, "animator").play("collided")
     
     elif component_a.collision_category == "actors":
         if component_b.collision_category == "particles":
-            game.add_action(game.actions.Destroy(component_b.id))
+            component_b.inactive = True
+            game.get_component(component_b.id, "animator").play("expired")
             game.set_property(component_a.id, "health", min(game.get_property(component_a.id, "health") + 2, 100))
+            tran = game.get_component(component_b.id, "transform")
+            game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "collected experience", Vector2(tran.x, tran.y), 3))
+            game.get_component(component_a.id, "animator").play("healing")
 
 def tank_death(component):
     collider = component.game.get_component(component.id, "collider")
     transform = component.game.get_component(component.id, "transform")
+    component.game.helpers.spawn_particles(collider,
+        random.randint(5, 10),
+        "experience",
+        lifetime=[20, 40],
+        spawn_point=Vector2(transform.x, transform.y),
+        rotation=[0, 360],
+        scale=[1, 1.5],
+        speed=[10, 80],
+        spin_rate=[10, 50],
+        collide=True)
     component.game.helpers.spawn_particles(collider,
         20,
         collider.particle_source_name,

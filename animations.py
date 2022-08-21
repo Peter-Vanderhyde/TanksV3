@@ -164,6 +164,24 @@ tank_animation = {
                 }
             }
         ]
+    },
+    "healing":{
+        "duration":0.2,
+        "initial frame":{
+            "body":{
+                "image":"healing"
+            }
+        },
+        "frames":[
+            {
+                "delay":1,
+                "properties":{
+                    "body":{
+                        "image":"normal"
+                    }
+                }
+            }
+        ]
     }
 }
 
@@ -222,8 +240,64 @@ bullet_animation = {
     }
 }
 
+effects_animation = {
+    "indexes":["effect"],
+    "collected experience":{
+        "duration":0.5,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":0
+            }
+        },
+        "frames":[
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"1"
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"2"
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"3"
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"4"
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"4"
+                    }
+                }
+            }
+        ]
+    }
+}
+
 animations = {
     "tank":tank_animation,
     "particle":particle_animation,
-    "bullet":bullet_animation
+    "bullet":bullet_animation,
+    "effects":effects_animation
 }

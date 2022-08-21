@@ -18,10 +18,14 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Make shapes destructible
-# Make the collectible particles green
+# Switch tank healing animation to the damage animation. Add separate effect for healing such as green +.
+# Make the collectible particles add xp not health
+# Add slight magnetics?
 # Make a random chance to drop and random amount of them
-# Make a ring wall
+# Make sounds get quieter
+# Make shapes destructible
+# Instead of wall, make it so if you cross the border, a line connects to you and, the longer
+#   you stay out of bounds, the more the line goes from green to red and then pulls you back (maybe damages too)
 # Make small enemies that slowly go for player
 # Explosions consist of randomly orange particles going from color to gray and shrinking
 # Also just smoke particles (But not too many)

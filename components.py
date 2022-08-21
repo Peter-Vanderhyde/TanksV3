@@ -380,7 +380,7 @@ class GraphicsSystem(DisplayedSystem):
                             if component.transform_component.rotation != component.last_rotation or component.last_edits[index] != edits or component.images[index][0] != component.previous_images[index]:
                                 ck = image.get_colorkey()
                                 width, height = image.get_size()
-                                image = pygame.transform.scale(image, (math.ceil(width * scale * scale_offset), math.ceil(height * scale * scale_offset)))
+                                image = pygame.transform.scale(image, (max(0, math.ceil(width * scale * scale_offset)), max(0, math.ceil(height * scale * scale_offset))))
                                 image = pygame.transform.rotate(image, -rotation - rotation_offset)
                                 if ck:
                                     image.set_colorkey(ck)
@@ -523,9 +523,14 @@ class HealthBarSystem(DisplayedSystem):
                 max_health = game.get_property(component.id, "max health")
                 if health < max_health:
                     ghost_health = game.get_property(component.id, "ghost health")
-                    # Shrink the ghost health until it reaches the actual health
-                    shrink_by = max(min(0.05, ghost_health - health), (ghost_health - health) * 0.005)
-                    game.set_property(component.id, "ghost health", ghost_health - shrink_by)
+                    if ghost_health < health:
+                        ghost_health = health
+                        game.set_property(component.id, "ghost health", health)
+                    else:
+                        # Shrink the ghost health until it reaches the actual health
+                        shrink_by = max(min(0.05, ghost_health - health), (ghost_health - health) * 0.005)
+                        game.set_property(component.id, "ghost health", ghost_health - shrink_by)
+                    
                     ghost_percent = ghost_health / max_health
                     width = ghost_percent * component.width
                     health_rect = Rect(0, 0, width, component.height)
@@ -546,6 +551,8 @@ class HealthBarSystem(DisplayedSystem):
                         health_rect.height -= 2
                         health_rect.center = center
                         pygame.draw.rect(game.screen, game.colors.green, health_rect, 0, 2)
+                elif game.get_property(component.id, "ghost health") != health:
+                    game.set_property(component.id, "ghost health", health)
 
 class AnimatorSystem(System):
     def __init__(self):
@@ -563,6 +570,8 @@ class AnimatorSystem(System):
                 game = component.game
                 anim_set = component.animation_set
                 for current_animation, animation_state, animation_duration_multiplier in zip(component.current_animations, component.animation_states, component.duration_multipliers):
+                    if "done with animation" == current_animation:
+                        break
                     animation_properties = game.animations[anim_set][current_animation]
                     duration = animation_properties["duration"] * animation_duration_multiplier
                     state = animation_state

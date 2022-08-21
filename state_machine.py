@@ -279,7 +279,7 @@ class Game(GameState):
         for i in range(5):
             enemy_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEnemy(enemy_id, Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000)), 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
-            #game.add_action(game.actions.StartFiringBarrels(enemy_id))
+            game.add_action(game.actions.StartFiringBarrels(enemy_id))
 
         game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 

@@ -27,7 +27,9 @@ ASSETS = (
     ("particle_debris_player", True, white),
     ("particle_debris_2_player", True, white),
     ("particle_debris_3_player", True, white),
-    ("square_small", True)
+    ("square_small", True),
+    ("experience", True, white),
+    ("effect_default", True, white)
 )
 
 SOUNDS = (
@@ -41,7 +43,8 @@ PARTICLES = {
     "bullet_enemy": ["particle_2_enemy", "particle_3_enemy"],
     "body_player": ["particle_player", "particle_2_player"],
     "bullet_player": ["particle_2_player", "particle_3_player"],
-    "barrel":["particle_barrel"]
+    "barrel":["particle_barrel"],
+    "experience":["experience"]
 }
 
 # PARTICLES = {
@@ -55,7 +58,7 @@ PARTICLES = {
 COLLISION_CATEGORIES = ["projectiles", "actors", "shapes", "particles"]
 
 # Settings
-PLAYER_MAX_SPEED = 300
+PLAYER_MAX_SPEED = 250
 PLAYER_ACCEL = 0.02 # Speed up /|\ bigger number speeds up faster
 PLAYER_DECEL = 0.02 # Slow down /|\ bigger number slows down faster
 PLAYER_FRICTION = 0.4 # Slipperiness /|\ bigger number means less sliding

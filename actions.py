@@ -188,7 +188,7 @@ class SpawnBullet(Action):
             return
         game.create_entity(self.bullet_id)
         game.add_component(self.bullet_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.bullet_id, "graphics", 0, [(game.images[self.projectile_name], Vector2(0, 0), 0, 1)], game.get_component(self.bullet_id, "transform"))
+        game.add_component(self.bullet_id, "graphics", 0, [[game.images[self.projectile_name], Vector2(0, 0), 0, 1]], game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "physics", self.angle, (self.speed, self.speed, self.speed), self.rotational_force, 1, 1, 0, game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "animator", "bullet", [], game.get_component(self.bullet_id, "graphics"), game.get_component(self.bullet_id, "transform"))
         game.add_component(self.bullet_id, "life timer", time.time(), 3, game.get_component(self.bullet_id, "animator"))
@@ -210,7 +210,7 @@ class SpawnShape(Action):
     def execute_action(self, game):
         game.create_entity(self.shape_id)
         game.add_component(self.shape_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.shape_id, "graphics", 0, [(game.images["square_small"], Vector2(0, 0), 0, 1)], game.get_component(self.shape_id, "transform"))
+        game.add_component(self.shape_id, "graphics", 0, [[game.images["square_small"], Vector2(0, 0), 0, 1]], game.get_component(self.shape_id, "transform"))
         game.add_component(self.shape_id, "physics", self.rotation, (0, 0, 0), self.spin_rate, 1, 0.7, settings.PARTICLE_FRICTION, game.get_component(self.shape_id, "transform"), self.spin_friction)
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.shape_id, "collider", self.shape_id, 8, Vector2(0, 0), "shapes", [], "", game.get_component(self.shape_id, "transform"))
@@ -236,18 +236,28 @@ class SpawnParticle(Action):
     def execute_action(self, game):
         game.create_entity(self.particle_id)
         game.add_component(self.particle_id, "transform", self.spawn_point.x, self.spawn_point.y, self.rotation, self.scale)
-        game.add_component(self.particle_id, "graphics", 0, [(game.images[self.image_string], Vector2(0, 0), 0, 1)], game.get_component(self.particle_id, "transform"))
+        game.add_component(self.particle_id, "graphics", 0, [[game.images[self.image_string], Vector2(0, 0), 0, 1]], game.get_component(self.particle_id, "transform"))
         game.add_component(self.particle_id, "animator", "particle", [], game.get_component(self.particle_id, "graphics"), game.get_component(self.particle_id, "transform"))
         game.add_component(self.particle_id, "physics", self.rotation, (self.max_speed, self.current_speed, self.target_speed), self.rotational_force, 1, self.decel, self.friction, game.get_component(self.particle_id, "transform"), rotation_friction=self.rotation_friction)
         game.add_component(self.particle_id, "life timer", time.time(), self.lifetime, game.get_component(self.particle_id, "animator"))
         if self.collide:
-            if "particle_enemy" in self.image_string or "particle_player" in self.image_string:
-                radius = 7 * self.scale
-            elif "particle_2" in self.image_string:
-                radius = 6 * self.scale
-            elif "particle_3" in self.image_string:
-                radius = 3 * self.scale
+            radius = (game.images[self.image_string].get_width() + game.images[self.image_string].get_height()) // 4
+            radius *= self.scale
             game.add_component(self.particle_id, "collider", self.particle_id, radius, Vector2(0, 0), "particles", [], "", game.get_component(self.particle_id, "transform"))
+
+class SpawnEffect(Action):
+    def __init__(self, effect_id, animation_name, spawn_point, scale=1):
+        super().__init__(None)
+        self.effect_id = effect_id
+        self.animation_name = animation_name
+        self.spawn_point = spawn_point
+        self.scale = scale
+    
+    def execute_action(self, game):
+        game.create_entity(self.effect_id)
+        game.add_component(self.effect_id, "transform", self.spawn_point.x, self.spawn_point.y, 0, self.scale)
+        game.add_component(self.effect_id, "graphics", 2, [[game.images["effect_default"], Vector2(0, 0), 0, 1]], game.get_component(self.effect_id, "transform"))
+        game.add_component(self.effect_id, "animator", "effects", [self.animation_name], game.get_component(self.effect_id, "graphics"), game.get_component(self.effect_id, "transform"))
 
 class StartFiringBarrels(Action):
     def __init__(self, id):
