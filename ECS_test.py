@@ -55,27 +55,17 @@ def load_images():
     return d
 
 def load_animation_images():
+    animations.format_animations()
     animation_images = {}
-    paths = Path(settings.ANIMATION_PATH).glob("*")
-    paths = [x.name for x in paths]
-    # The point of these for loops is to go through each animation and check whether it
-    # needs to set the colorkey to white or not.
-    # If I use Piskel to animate something, it already has a transparent background.
-    for animations_name, animations_dict in animations.animations.items():
-        for animation in animations_dict.keys():
-            if animation == "indexes": continue
-
-            if "custom frames" in animations_dict[animation] or "piskel frames" in animations_dict[animation]:
-                for path in Path(settings.ANIMATION_PATH + animations_name + "/" + animation).glob("*.png"):
-                    path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
-                    # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
-                    # animation, then the image name
-                    image = pygame.image.load(path).convert_alpha()
-                    # Checks if Piskel was used or not.
-                    if "custom frames" in animations_dict[animation]:
-                        image.set_colorkey((255, 255, 255))
-                    
-                    animation_images.update({path_string:image})
+    for path in Path(settings.ANIMATION_PATH).rglob("*.png"):
+        path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
+        # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
+        # animation, then the image name
+        image = pygame.image.load(path).convert_alpha()
+        if path.parts[-3] + "/" + path.parts[-4] not in settings.ANIMATION_COLORKEY_EXCLUSION:
+            image.set_colorkey((255, 255, 255))
+        
+        animation_images.update({path_string:image})
     
     return animation_images
 
@@ -165,7 +155,7 @@ class Game(Container):
 
         return entity_id in self.get_entities()
     
-    def create_entity(self, entity_id):
+    def create_entity(self, entity_id, trigger_on_death=None, args=None):
         """Adds a new id to the list of entities without any components yet"""
 
         # Create [-1, -1, -1, etc] because we don't know what components it will have
@@ -174,6 +164,12 @@ class Game(Container):
         self.get_entities()[entity_id] = component_indexes
         self.set_living_entities(self.get_living_entities() + 1)
         self.get_entity_props()[entity_id] = {}
+
+        # Pass in a function to be executed upon the entity's death
+        if trigger_on_death:
+            self.get_entity_props()[entity_id]["on death"] = trigger_on_death
+        if args:
+            self.get_entity_props()[entity_id]["on death args"] = args
 
     def add_component(self, entity_id, component_name, *args, **kwargs):
         """Changes the value for the given component in that entity's list of
@@ -197,6 +193,12 @@ class Game(Container):
                 if index != -1:
                     self.get_system_index()[i].remove_component(index)
             self.get_entities().pop(entity_id)
+            if "on death" in self.get_entity_props()[entity_id]:
+                if "on death args" in self.get_entity_props()[entity_id]:
+                    self.get_entity_props()[entity_id]["on death"](self.get_entity_props()[entity_id]["on death args"])
+                else:
+                    self.get_entity_props()[entity_id]["on death"]()
+            
             self.get_entity_props().pop(entity_id)
             self.set_living_entities(self.get_living_entities() - 1)
         except:
@@ -320,6 +322,7 @@ class Camera:
 
 def create_game_instance(scene_manager):
     game = Game(scene_manager.screen, settings.COLLISION_GRID_WIDTH, scene_manager)
+    animations.load_animations(settings.ANIMATION_PATH)
     game.update_images_and_sounds(load_images(), load_animation_images(), load_sounds())
     return game
 

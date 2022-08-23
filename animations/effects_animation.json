@@ -1,0 +1,189 @@
+{
+    "indexes":["effect"],
+    "collected experience":{
+        "duration":0.5,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":0,
+                "scale":1
+            }
+        },
+        "frames":[
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"1",
+                        "scale":1.1
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"2",
+                        "scale":1.2
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"3",
+                        "scale":1.3
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"4",
+                        "scale":1.4
+                    }
+                }
+            },
+            {
+                "delay":0.2,
+                "properties":{
+                    "effect":{
+                        "image":"4",
+                        "scale":1.5
+                    }
+                }
+            }
+        ]
+    },
+    "healing plus":{
+        "duration":0.25,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"healing_plus",
+                "scale":0
+            }
+        },
+        "frames":[
+            {
+                "delay":0.1,
+                "properties":{
+                    "effect":{
+                        "scale":1
+                    }
+                }
+            },
+            {
+                "delay":0.8,
+                "properties":{
+                    "effect":{
+                        "scale":1
+                    }
+                }
+            },
+            {
+                "delay":0.1,
+                "properties":{
+                    "effect":{
+                        "scale":0
+                    }
+                }
+            }
+        ]
+    },
+    "spawn wave":{
+        "duration":0.75,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"wave_1",
+                "scale":1
+            }
+        },
+        "frames":[
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_2",
+                        "scale":1.3
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_3",
+                        "scale":1.55
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_4",
+                        "scale":1.75
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_5",
+                        "scale":1.9
+                    }
+                }
+            },
+            {
+                "delay":0.15,
+                "properties":{
+                    "effect":{
+                        "image":"wave_5",
+                        "scale":2
+                    }
+                }
+            }
+        ]
+    },
+    "player vortex":{
+        "duration":0.8,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"00",
+                "scale":4
+            }
+        },
+        "create frames":{
+            "properties":{
+                "effect":{
+                    "image":16,
+                    "scale":2
+                }
+            }
+        }
+    },
+    "enemy vortex":{
+        "duration":0.8,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"00",
+                "scale":4
+            }
+        },
+        "create frames":{
+            "properties":{
+                "effect":{
+                    "image":16,
+                    "scale":2
+                }
+            }
+        }
+    }
+}

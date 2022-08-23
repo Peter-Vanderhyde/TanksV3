@@ -27,10 +27,15 @@ Destroy: (id)
 '''
 
 class Action:
-    def __init__(self, id):
+    def __init__(self, id, trigger_on_death=None, args=None):
         """Takes in the id that this action is applying to.
         It then checks if that id is still alive before making changes to it."""
         self.id = id
+        # It can take in a function that can be passed in when an entity is created to be
+        # executed upon its death
+        self.trigger_on_death = trigger_on_death
+        # Arguments to pass to the death function
+        self.args = args
 
     def execute(self, game):
         self.execute_action(game)
@@ -250,8 +255,8 @@ class SpawnParticle(Action):
             game.add_component(self.particle_id, "collider", self.particle_id, radius, Vector2(0, 0), "particles", [], "", game.get_component(self.particle_id, "transform"))
 
 class SpawnEffect(Action):
-    def __init__(self, effect_id, animation_name, spawn_point, scale=1, layer_to_draw_on=2):
-        super().__init__(None)
+    def __init__(self, effect_id, animation_name, spawn_point, scale=1, layer_to_draw_on=2, trigger_on_death=None, args=None):
+        super().__init__(None, trigger_on_death, args)
         self.effect_id = effect_id
         self.animation_name = animation_name
         self.spawn_point = spawn_point
@@ -259,7 +264,7 @@ class SpawnEffect(Action):
         self.layer_to_draw_on = layer_to_draw_on
     
     def execute_action(self, game):
-        game.create_entity(self.effect_id)
+        game.create_entity(self.effect_id, self.trigger_on_death, self.args)
         game.add_component(self.effect_id, "transform", self.spawn_point[0], self.spawn_point[1], 0, self.scale)
         game.add_component(self.effect_id, "graphics", self.layer_to_draw_on, [[game.images["effect_default"], Vector2(0, 0), 0, 1]], game.get_component(self.effect_id, "transform"))
         game.add_component(self.effect_id, "animator", "effects", [self.animation_name], game.get_component(self.effect_id, "graphics"), game.get_component(self.effect_id, "transform"))

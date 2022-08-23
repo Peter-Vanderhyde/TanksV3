@@ -47,6 +47,10 @@ PARTICLES = {
     "experience":["experience"]
 }
 
+ANIMATION_COLORKEY_EXCLUSION = [
+    "effects/vortex"
+]
+
 # PARTICLES = {
 #     "body_enemy": ["particle_debris_enemy", "particle_debris_2_enemy"],
 #     "bullet_enemy": ["particle_debris_2_enemy", "particle_debris_3_enemy"],
