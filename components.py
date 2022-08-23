@@ -528,7 +528,7 @@ class HealthBarSystem(DisplayedSystem):
                         game.set_property(component.id, "ghost health", health)
                     else:
                         # Shrink the ghost health until it reaches the actual health
-                        shrink_by = max(min(0.05, ghost_health - health), (ghost_health - health) * 0.005)
+                        shrink_by = max(min(0.05, ghost_health - health), (ghost_health - health) * 0.01)
                         game.set_property(component.id, "ghost health", ghost_health - shrink_by)
                     
                     ghost_percent = ghost_health / max_health

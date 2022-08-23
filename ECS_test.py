@@ -18,6 +18,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
+# Add slight variation to shooting
 # Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?
@@ -34,6 +35,7 @@ pygame.mixer.init()
 # Make one such element for the main menu. Maybe use one in-game to display stats on the side.
 # (For crazy idea, instead of changing the background of the button rect so the background bleeds around the curved
 #  edge, try making the background transparent and drawing a completely different rect behind it with the same rounding)
+# Add engines
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
@@ -54,13 +56,26 @@ def load_images():
 
 def load_animation_images():
     animation_images = {}
-    for path in Path(settings.ANIMATION_PATH).rglob("*.png"):
-        path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
-        # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
-        # animation, then the image name
-        image = pygame.image.load(path).convert_alpha()
-        image.set_colorkey((255, 255, 255))
-        animation_images.update({path_string:image})
+    paths = Path(settings.ANIMATION_PATH).glob("*")
+    paths = [x.name for x in paths]
+    # The point of these for loops is to go through each animation and check whether it
+    # needs to set the colorkey to white or not.
+    # If I use Piskel to animate something, it already has a transparent background.
+    for animations_name, animations_dict in animations.animations.items():
+        for animation in animations_dict.keys():
+            if animation == "indexes": continue
+
+            if "custom frames" in animations_dict[animation] or "piskel frames" in animations_dict[animation]:
+                for path in Path(settings.ANIMATION_PATH + animations_name + "/" + animation).glob("*.png"):
+                    path_string = '/'.join(path.parts).removeprefix(settings.ANIMATION_PATH).removesuffix(".png")
+                    # This makes 3 strings separated by '/'. The first is the animation set's name, then the specific
+                    # animation, then the image name
+                    image = pygame.image.load(path).convert_alpha()
+                    # Checks if Piskel was used or not.
+                    if "custom frames" in animations_dict[animation]:
+                        image.set_colorkey((255, 255, 255))
+                    
+                    animation_images.update({path_string:image})
     
     return animation_images
 

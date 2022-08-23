@@ -134,7 +134,7 @@ class SpawnPlayer(Action):
         game.add_component(self.player_id, "collider", self.player_id, 21 * game.get_component(self.player_id, "transform").scale, Vector2(0, 0), "actors", ["particles"], "body_player", game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.player_id, "transform"))
 
-        game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "player spawn wave", self.spawn_point))
+        game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "spawn wave", self.spawn_point, layer_to_draw_on=0))
 
 class SpawnEnemy(Action):
     def __init__(self, enemy_id, spawn_point, rotation, scale, max_speed, accel, decel, friction, rotational_force=0):
@@ -171,6 +171,8 @@ class SpawnEnemy(Action):
         # Collider: [collision_check_id, radius, offset, collision_category, collidable_width, transform_component]
         game.add_component(self.enemy_id, "collider", self.enemy_id, 21 * game.get_component(self.enemy_id, "transform").scale, Vector2(0, 0), "actors", ["particles"], "body_enemy", game.get_component(self.enemy_id, "transform"))
         game.add_component(self.enemy_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.enemy_id, "transform"))
+
+        game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "spawn wave", self.spawn_point, layer_to_draw_on=0))
 
 class SpawnBullet(Action):
     def __init__(self, bullet_id, owner_id, spawn_point, rotation, scale, angle, speed, projectile_name, rotational_force=0):

@@ -26,7 +26,7 @@ player_tank_animation = {
                 "scale":0
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.4,
                 "properties":{
@@ -72,7 +72,7 @@ player_tank_animation = {
                 "scale":1
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.4,
                 "properties":{
@@ -130,7 +130,7 @@ player_tank_animation = {
                 "volume":0.3
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.25,
                 "properties":{
@@ -166,13 +166,13 @@ player_tank_animation = {
         ]
     },
     "healing":{
-        "duration":0.3,
+        "duration":0.25,
         "initial frame":{
             "body":{
                 "image":"healing"
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":1,
                 "properties":{
@@ -184,13 +184,13 @@ player_tank_animation = {
         ]
     },
     "damaged":{
-        "duration":0.3,
+        "duration":0.25,
         "initial frame":{
             "body":{
                 "image":"damaged"
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":1,
                 "properties":{
@@ -215,7 +215,7 @@ particle_animation = {
                 "scale":1
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":1,
                 "properties":{
@@ -247,7 +247,7 @@ bullet_animation = {
                 "scale":1
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":1,
                 "properties":{
@@ -271,7 +271,7 @@ effects_animation = {
                 "scale":1
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.2,
                 "properties":{
@@ -328,7 +328,7 @@ effects_animation = {
                 "scale":0
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.1,
                 "properties":{
@@ -355,7 +355,7 @@ effects_animation = {
             }
         ]
     },
-    "player spawn wave":{
+    "spawn wave":{
         "duration":0.75,
         "on finish":["destroy component"],
         "initial frame":{
@@ -364,13 +364,13 @@ effects_animation = {
                 "scale":1
             }
         },
-        "frames":[
+        "custom frames":[
             {
                 "delay":0.15,
                 "properties":{
                     "effect":{
                         "image":"wave_2",
-                        "scale":1.2
+                        "scale":1.3
                     }
                 }
             },
@@ -379,7 +379,7 @@ effects_animation = {
                 "properties":{
                     "effect":{
                         "image":"wave_3",
-                        "scale":1.4
+                        "scale":1.55
                     }
                 }
             },
@@ -388,7 +388,7 @@ effects_animation = {
                 "properties":{
                     "effect":{
                         "image":"wave_4",
-                        "scale":1.6
+                        "scale":1.75
                     }
                 }
             },
@@ -397,7 +397,7 @@ effects_animation = {
                 "properties":{
                     "effect":{
                         "image":"wave_5",
-                        "scale":1.8
+                        "scale":1.9
                     }
                 }
             },
@@ -411,6 +411,20 @@ effects_animation = {
                 }
             },
         ]
+    },
+    "vortex":{
+        "duration":1.5,
+        "on finish":["destroy component"],
+        "initial frame":{
+            "effect":{
+                "image":"00"
+            }
+        },
+        "piskel frames":{
+            "effect":{
+                "image":"16"
+            }
+        }
     }
 }
 
