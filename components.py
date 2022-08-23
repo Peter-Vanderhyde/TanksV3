@@ -449,6 +449,8 @@ class LifeTimerSystem(System):
                     if component.animator_component != None:
                         if "expired" not in component.animator_component.current_animations:
                             component.animator_component.play("expired")
+                            if component.game.has_component(component.id, "collider"):
+                                component.game.get_component(component.id, "collider").inactive = True
                     else:
                         component.game.add_action(component.game.actions.Destroy(component.id))
 

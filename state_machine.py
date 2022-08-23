@@ -292,7 +292,7 @@ class Game(GameState):
             effect_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEffect(effect_id, "enemy vortex", position, trigger_on_death=temp_func, args=position))
 
-        #game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
+        game.helpers.spawn_shapes(game, 60, [Vector2(-1000, -1000), Vector2(1000, 1000)])
 
         game.action_handler.handle_actions()
 
