@@ -11,6 +11,7 @@ import helpers
 import animations
 import ui
 import state_machine
+import math
 from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
@@ -18,7 +19,6 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Add slight variation to shooting
 # Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?
@@ -36,6 +36,7 @@ pygame.mixer.init()
 # (For crazy idea, instead of changing the background of the button rect so the background bleeds around the curved
 #  edge, try making the background transparent and drawing a completely different rect behind it with the same rounding)
 # Add engines
+# Add slight variation to shooting
 
 def load_image(name, alpha=True, colorkey=()):
     if alpha:
@@ -246,27 +247,23 @@ class Game(Container):
         self.sounds.update(new_sounds_dict)
     
     def resync_components(self):
-        time_since_save = time.time() - self.state_container.time_of_save
-        for barrel_manager in self.get_systems()["barrel manager"].components:
-            if barrel_manager.id is not None:
-                for barrel in barrel_manager.barrels:
-                    barrel[0] = barrel[0] + time_since_save
-        
-        for life_timer in self.get_systems()["life timer"].components:
-            if life_timer.id is not None:
-                life_timer.start_time += time_since_save
-        
-        for animator in self.get_systems()["animator"].components:
-            if animator.id is not None:
-                for animation in animator.animation_states:
-                    if animation["start time"] != None:
-                        animation["start time"] += time_since_save
-                    if animation["frame start time"] != None:
-                        animation["frame start time"] += time_since_save
+        # time_since_save = time.time() - self.state_container.time_of_save
+        # No longer needed since components don't calculate based off time.time anymore
         
         for controller in self.get_systems()["controller"].components:
             if controller.id is not None and controller.controller_name == "player":
                 self.add_action(self.actions.StopFiringBarrels(controller.id))
+    
+    def play_sound(self, sound, sound_position):
+        sound_position = Vector2(sound_position)
+        camera_pos = self.camera.corner + (self.camera.width / 2, self.camera.height / 2)
+        distance_from_source = abs((camera_pos - sound_position).length())
+        curr_volume = pygame.mixer.Sound.get_volume(sound)
+        new_volume = curr_volume
+        new_volume -= settings.SOUND_FALLOFF_RATE * math.sqrt(distance_from_source)
+        new_volume = max(0, new_volume)
+        pygame.mixer.Sound.set_volume(sound, new_volume)
+        pygame.mixer.Sound.play(sound)
 
 class Camera:
     def __init__(self, game, target_id=None):

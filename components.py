@@ -2,7 +2,6 @@ import pygame
 import math
 import time
 import settings
-import numpy as np
 from pygame.math import Vector2
 from pygame.locals import *
 
@@ -111,9 +110,13 @@ class BarrelManager(Component):
     
     def activate(self, id, barrels, shooting, projectile_name, graphics_component, transform_component, animator_component):
         self.id = id
-        # barrels = [[last_shot, cooldown, image_index], [<next barrel>]]
+        # barrels = [[cooldown, image_index], [<next barrel>]]
         # NOTE: reference each barrel in the order that they should be drawn
         self.barrels = barrels
+        for barrel in self.barrels:
+            # Becomes [accumulated_time_since_last_shot, cooldown, image_imdex]
+            barrel.insert(0, 0)
+        
         self.shooting = shooting
         self.projectile_name = projectile_name
         self.graphics_component = graphics_component
@@ -124,10 +127,10 @@ class LifeTimer(Component):
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, start_time, duration, animator_component=None):
+    def activate(self, id, duration, animator_component=None):
         self.id = id
-        self.start_time = start_time
         self.duration = duration
+        self.accumulated = 0
         self.animator_component = animator_component
 
 class Collider(Component):
@@ -178,8 +181,6 @@ class Animator(Component):
         self.graphics_component = graphics_component
         self.transform_component = transform_component
         self.current_frame = None
-        self.start_time = None
-        self.frame_start_time = None
         self.duration_multipliers = [1] * len(current_animations)
         self.images = {}
         self.set_animation_set(animation_set)
@@ -193,8 +194,8 @@ class Animator(Component):
         self.animation_states.append({
             "animation":animation,
             "current frame":None,
-            "start time":None,
-            "frame start time":None,
+            "time accumulated":None,
+            "frame time accumulated":None,
             "previous states":{},
             "played sound":False
         })
@@ -312,9 +313,13 @@ class PhysicsSystem(System):
             component = self.components[i]
             if component.id is not None:
                 if component.target_velocity == Vector2(0, 0):
-                    component.velocity = component.velocity.lerp(component.target_velocity, component.decel * component.friction)
+                    rate_of_change = component.decel * component.friction * (dt / 0.004)
                 else:
-                    component.velocity = component.velocity.lerp(component.target_velocity, component.accel - component.accel * component.friction)
+                    rate_of_change = (component.accel - component.accel * component.friction) * (dt / 0.004)
+                
+                if rate_of_change > 1:
+                    rate_of_change = 1
+                component.velocity = component.velocity.lerp(component.target_velocity, rate_of_change)
 
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
@@ -415,18 +420,19 @@ class BarrelManagerSystem(System):
     def __init__(self):
         super().__init__("barrel manager", BarrelManager)
     
-    def update(self):
+    def update(self, frame_time):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
                 # update barrel animations?
                 if component.shooting:
                     for barrel in component.barrels:
-                        last_shot, cooldown, image_index = barrel
+                        barrel[0] += frame_time
+                        last_shot_accumulation, cooldown, image_index = barrel
                         image, offset_vector, rotation_offset, scale_offset = component.graphics_component.images[image_index]
                         scale = component.transform_component.scale * scale_offset
-                        if time.time() - last_shot >= cooldown:
-                            barrel[0] = time.time()
+                        if last_shot_accumulation >= cooldown:
+                            barrel[0] = 0
                             barrel_length = settings.BARREL_LENGTH - 10 * scale
                             barrel_angle = component.transform_component.rotation + rotation_offset
                             barrel_end = Vector2()
@@ -441,11 +447,12 @@ class LifeTimerSystem(System):
     def __init__(self):
         super().__init__("life timer", LifeTimer)
     
-    def update(self):
+    def update(self, frame_time):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                if time.time() - component.start_time >= component.duration:
+                component.accumulated += frame_time
+                if component.accumulated >= component.duration:
                     if component.animator_component != None:
                         if "expired" not in component.animator_component.current_animations:
                             component.animator_component.play("expired")
@@ -560,7 +567,7 @@ class AnimatorSystem(System):
     def __init__(self):
         super().__init__("animator", Animator)
     
-    def update(self):
+    def update(self, frame_time):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None and "done with animation" not in component.current_animations:
@@ -577,9 +584,9 @@ class AnimatorSystem(System):
                     animation_properties = game.animations[anim_set][current_animation]
                     duration = animation_properties["duration"] * animation_duration_multiplier
                     state = animation_state
-                    if state["start time"] == None:
-                        state["start time"] = time.time()
-                        state["frame start time"] = time.time()
+                    if state["time accumulated"] == None:
+                        state["time accumulated"] = 0
+                        state["frame time accumulated"] = 0
                         state["current frame"] = 0
                         state["previous states"] = {}
                         state["played sound"] = False
@@ -589,10 +596,12 @@ class AnimatorSystem(System):
                             if "done with animation" in component.current_animations:
                                 break
                     elif duration > 0:
+                        state["time accumulated"] += frame_time
+                        state["frame time accumulated"] += frame_time
                         frame = animation_properties["frames"][state["current frame"]]
                         frame_duration = duration * frame["delay"]
-                        elapsed = time.time() - state["frame start time"]
-                        if time.time() - state["start time"] >= duration:
+                        elapsed = state["frame time accumulated"]
+                        if state["time accumulated"] >= duration:
                             self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                             self.end_animation(component, state)
                             if "done with animation" in component.current_animations:
@@ -602,8 +611,8 @@ class AnimatorSystem(System):
                             if self.go_to_next_frame(component, state, animation_properties, frame, frame_duration, elapsed):
                                 frame = animation_properties["frames"][state["current frame"]]
                                 frame_duration = duration * frame["delay"]
-                                elapsed = time.time() - state["frame start time"]
-                                if time.time() - state["start time"] >= duration:
+                                elapsed = state["frame time accumulated"]
+                                if state["time accumulated"] >= duration:
                                     self.apply_frame(component, state, animation_properties["frames"][-1]["properties"])
                                     self.end_animation(component, state)
                                     if "done with animation" in component.current_animations:
@@ -629,10 +638,10 @@ class AnimatorSystem(System):
                     elif property == "volume":
                         volume = value
                 
-                if volume != 1.0:
-                    pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
-                
-                pygame.mixer.Sound.play(component.game.sounds[name])
+                pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
+                tran = component.game.get_component(component.id, "transform")
+                component.game.play_sound(component.game.sounds[name], (tran.x, tran.y))
+                state["played sound"] = True
                 continue
 
             state["previous states"].setdefault(image, {})
@@ -655,11 +664,16 @@ class AnimatorSystem(System):
             if image == "sound":
                 if not state["played sound"]:
                     name = ""
+                    volume = 1.0
                     for property, value in properties.items():
                         if property == "name":
                             name = value
-                        
-                    pygame.mixer.Sound.play(component.game.sounds[name])
+                        elif property == "volume":
+                            volume = value
+                    
+                    pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
+                    tran = component.game.get_component(component.id, "transform")
+                    component.game.play_sound(component.game.sounds[name], (tran.x, tran.y))
                     state["played sound"] = True
                 
                 continue
@@ -685,13 +699,11 @@ class AnimatorSystem(System):
         else:
             past = elapsed - frame_duration
             state["current frame"] += 1
-            state["frame start time"] = time.time() - past
+            state["frame time accumulated"] = past
             state["played sound"] = False
             return True
     
     def end_animation(self, component, state):
-        if state["animation"] == "die":
-            print()
         props = component.game.animations[component.animation_set][state["animation"]]
         loop = props.get("loop", False)
         

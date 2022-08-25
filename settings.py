@@ -7,6 +7,7 @@ SCREEN_SIZE = (monitor.current_w - 50, monitor.current_h - 75)
 IMAGE_PATH = "images/"
 ANIMATION_PATH = "animations/"
 SOUND_PATH = "sounds/"
+SOUND_FALLOFF_RATE = 0.01
 # (<name>, <alpha>, <colorkey>)
 ASSETS = (
     ("barrel", True, white),

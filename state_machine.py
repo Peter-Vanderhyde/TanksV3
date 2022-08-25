@@ -181,9 +181,9 @@ class MainMenu(GameState):
         game = self.game
         game.accumulator += frame_time
 
-        game.get_systems()["life timer"].update()
+        game.get_systems()["life timer"].update(frame_time)
         game.get_systems()["controller"].update()
-        game.get_systems()["barrel manager"].update()
+        game.get_systems()["barrel manager"].update(frame_time)
 
         while game.accumulator >= frame_time:
             game.get_systems()["physics"].update(frame_time)
@@ -192,7 +192,7 @@ class MainMenu(GameState):
             game.action_handler.handle_actions()
             game.accumulator -= frame_time
         
-        game.get_systems()["animator"].update()
+        game.get_systems()["animator"].update(frame_time)
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_RETURN:
@@ -285,7 +285,7 @@ class Game(GameState):
         def temp_func(position):
             enemy_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEnemy(enemy_id, position, 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
-            game.add_action(game.actions.StartFiringBarrels(enemy_id))
+            #game.add_action(game.actions.StartFiringBarrels(enemy_id))
         
         for i in range(5):
             position = Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000))
@@ -313,12 +313,13 @@ class Game(GameState):
         self.game.action_handler.get_player_input(event)
 
     def update(self, frame_time):
+        #frame_time /= 2
         game = self.game
         game.accumulator += frame_time
 
-        game.get_systems()["life timer"].update()
+        game.get_systems()["life timer"].update(frame_time)
         game.get_systems()["controller"].update()
-        game.get_systems()["barrel manager"].update()
+        game.get_systems()["barrel manager"].update(frame_time)
 
         while game.accumulator >= frame_time:
             game.get_systems()["physics"].update(frame_time)
@@ -327,7 +328,7 @@ class Game(GameState):
             game.action_handler.handle_actions()
             game.accumulator -= frame_time
         
-        game.get_systems()["animator"].update()
+        game.get_systems()["animator"].update(frame_time)
     
     def draw(self):
         game = self.game
