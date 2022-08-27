@@ -8,6 +8,7 @@ IMAGE_PATH = "images/"
 ANIMATION_PATH = "animations/"
 SOUND_PATH = "sounds/"
 SOUND_FALLOFF_RATE = 0.01
+MAX_SOUND_CHANNELS = 20
 # (<name>, <alpha>, <colorkey>)
 ASSETS = (
     ("barrel", True, white),

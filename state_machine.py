@@ -193,6 +193,7 @@ class MainMenu(GameState):
             game.accumulator -= frame_time
         
         game.get_systems()["animator"].update(frame_time)
+        game.play_sounds()
     
     def get_event(self, event):
         if event.type == KEYDOWN and event.key == K_RETURN:
@@ -285,7 +286,7 @@ class Game(GameState):
         def temp_func(position):
             enemy_id = game.get_unique_id()
             game.add_action(game.actions.SpawnEnemy(enemy_id, position, 0, 1, game.settings.PLAYER_MAX_SPEED, game.settings.PLAYER_ACCEL, game.settings.PLAYER_DECEL, game.settings.PLAYER_FRICTION))
-            #game.add_action(game.actions.StartFiringBarrels(enemy_id))
+            game.add_action(game.actions.StartFiringBarrels(enemy_id))
         
         for i in range(5):
             position = Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000))
@@ -329,6 +330,7 @@ class Game(GameState):
             game.accumulator -= frame_time
         
         game.get_systems()["animator"].update(frame_time)
+        game.play_sounds()
     
     def draw(self):
         game = self.game

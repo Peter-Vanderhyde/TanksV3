@@ -638,9 +638,10 @@ class AnimatorSystem(System):
                     elif property == "volume":
                         volume = value
                 
-                pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
+                sound = pygame.mixer.Sound(component.game.sounds[name])
+                sound.set_volume(volume)
                 tran = component.game.get_component(component.id, "transform")
-                component.game.play_sound(component.game.sounds[name], (tran.x, tran.y))
+                component.game.play_sound(sound, (tran.x, tran.y))
                 state["played sound"] = True
                 continue
 
@@ -671,9 +672,10 @@ class AnimatorSystem(System):
                         elif property == "volume":
                             volume = value
                     
-                    pygame.mixer.Sound.set_volume(component.game.sounds[name], volume)
+                    sound = pygame.mixer.Sound(component.game.sounds[name])
+                    sound.set_volume(volume)
                     tran = component.game.get_component(component.id, "transform")
-                    component.game.play_sound(component.game.sounds[name], (tran.x, tran.y))
+                    component.game.play_sound(sound, (tran.x, tran.y))
                     state["played sound"] = True
                 
                 continue

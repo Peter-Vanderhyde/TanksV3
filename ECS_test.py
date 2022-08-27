@@ -138,6 +138,8 @@ class Game(Container):
         self.sounds = {}
         self.dt = 0.01
         self.accumulator = 0.0
+        self.sounds_to_play = []
+        pygame.mixer.set_num_channels(settings.MAX_SOUND_CHANNELS)
 
         # This now holds all of the things that change from state to state
         # so when saving a state, this is what you save.
@@ -254,16 +256,27 @@ class Game(Container):
             if controller.id is not None and controller.controller_name == "player":
                 self.add_action(self.actions.StopFiringBarrels(controller.id))
     
-    def play_sound(self, sound, sound_position):
-        sound_position = Vector2(sound_position)
-        camera_pos = self.camera.corner + (self.camera.width / 2, self.camera.height / 2)
-        distance_from_source = abs((camera_pos - sound_position).length())
-        curr_volume = pygame.mixer.Sound.get_volume(sound)
-        new_volume = curr_volume
-        new_volume -= settings.SOUND_FALLOFF_RATE * math.sqrt(distance_from_source)
-        new_volume = max(0, new_volume)
-        pygame.mixer.Sound.set_volume(sound, new_volume)
-        pygame.mixer.Sound.play(sound)
+    def play_sound(self, sound, position):
+        self.sounds_to_play.append((sound, position))
+
+    def play_sounds(self):
+        for sound_info in self.sounds_to_play:
+            if pygame.mixer.find_channel():
+                free_channel = pygame.mixer.find_channel()
+                sound, sound_position = sound_info
+                sound_position = Vector2(sound_position)
+                camera_pos = self.camera.corner + (self.camera.width / 2, self.camera.height / 2)
+                distance_from_source = abs((camera_pos - sound_position).length())
+                curr_volume = sound.get_volume()
+                new_volume = curr_volume
+                new_volume -= settings.SOUND_FALLOFF_RATE * math.sqrt(distance_from_source)
+                new_volume = max(0, new_volume)
+                sound.set_volume(new_volume)
+                free_channel.play(sound)
+                self.sounds_to_play.pop(0)
+            else:
+                return
+                
 
 class Camera:
     def __init__(self, game, target_id=None):
