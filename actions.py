@@ -139,6 +139,7 @@ class SpawnPlayer(Action):
         game.add_component(self.player_id, "collider", self.player_id, 21 * game.get_component(self.player_id, "transform").scale, Vector2(0, 0), "actors", ["particles"], "body_player", game.get_component(self.player_id, "transform"))
         game.add_component(self.player_id, "health bar", 50, 10, Vector2(0, -30), game.get_component(self.player_id, "transform"))
 
+        game.set_player(self.player_id)
         game.add_action(game.actions.SpawnEffect(game.get_unique_id(), "spawn wave", self.spawn_point, layer_to_draw_on=0))
 
 class SpawnEnemy(Action):
@@ -317,6 +318,8 @@ class Destroy(Action):
         if not game.is_alive(self.id):
             return
         game.destroy_entity(self.id)
+        if game.get_player() == self.id:
+            game.set_player(None)
         if self.change_focus != None:
             game.add_action(game.actions.FocusCamera(self.change_focus))
         elif game.camera.target_id == self.id:

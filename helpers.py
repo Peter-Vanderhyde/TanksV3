@@ -128,3 +128,14 @@ def render_font(font, text, color):
     font = font.render(text, False, color)
     rect = font.get_rect()
     return font, rect
+
+def convert_to_positive_angle(angle):
+    """Using many pygame functions can return a negative angle, so this helps keep angles consistent"""
+    if angle < 0:
+        return 360 + angle
+    return angle
+
+def angle_toward(origin, target):
+    angle = (target - origin).as_polar()[1]
+    angle = convert_to_positive_angle(angle)
+    return angle

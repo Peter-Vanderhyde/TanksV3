@@ -24,6 +24,7 @@ class StateContainer:
 
         self.actions = []
         self.camera = None
+        self.player = None
 
         for system in game.components.systems:
             s = system()
@@ -37,6 +38,9 @@ class StateContainer:
 
         for category in game.settings.COLLISION_CATEGORIES:
             self.collision_maps[category] = game.grid_manager(game.collision_grid_width)
+        
+        # Not in use. Perhaps for future use when attacking on sight
+        self.collision_maps["in view"] = game.grid_manager(game.screen.get_width(), game.screen.get_height())
         
         game.action_handler.set_controller_system(self.systems["controller"])
 
@@ -330,7 +334,8 @@ class Game(GameState):
             game.accumulator -= frame_time
         
         game.get_systems()["animator"].update(frame_time)
-        game.play_sounds()
+        #game.play_sounds()
+        game.sounds_to_play = []
     
     def draw(self):
         game = self.game

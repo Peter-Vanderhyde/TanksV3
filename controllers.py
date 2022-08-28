@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 from pygame.math import Vector2
+import math
 
 class EnemyController:
     def __init__(self, game, id, transform_component):
@@ -10,7 +11,13 @@ class EnemyController:
     
     def update(self):
         transform = self.transform_component
-        transform.rotation = transform.rotation + 55 * self.game.dt
+        player = self.game.get_player()
+        if player:
+            p_trans = self.game.get_component(player, "transform")
+            target = Vector2(p_trans.x, p_trans.y)
+            origin = Vector2(transform.x, transform.y)
+            angle = self.game.helpers.angle_toward(origin, target)
+            transform.rotation = angle
 
     def get_action(self, event):
         pass

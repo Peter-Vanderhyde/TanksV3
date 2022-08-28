@@ -2,9 +2,10 @@ import pygame
 from pygame.math import Vector2
 
 class GridManager:
-    def __init__(self, cell_size):
+    def __init__(self, cell_width, cell_height=None):
         """Takes the cell size for checking collisions"""
-        self.cell_size = cell_size
+        self.cell_width = cell_width
+        self.cell_height = cell_height or cell_width
         self.contents = {}
     
     def clear(self):
@@ -13,7 +14,7 @@ class GridManager:
     def hash(self, pos):
         """Returns the coordinates representing which cell that location is within."""
         p = Vector2(pos)
-        return int(p.x / self.cell_size), int(p.y / self.cell_size)
+        return int(p.x / self.cell_width), int(p.y / self.cell_height)
     
     def get_cells_for_rect(self, rect):
         """Get every cell that the rectangle collides with."""

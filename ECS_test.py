@@ -1,6 +1,5 @@
 from pathlib import Path
 import pygame
-import time
 import controllers
 import components
 import actions
@@ -19,6 +18,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
+# Lerp the angle of the enemies toward the player
 # Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?
@@ -105,11 +105,17 @@ class Container:
     def get_collision_maps(self):
         return self.state_container.collision_maps
     
+    def get_player(self):
+        return self.state_container.player
+    
     def set_living_entities(self, living_entities):
         self.state_container.living_entities = living_entities
     
     def set_last_id(self, last_id):
         self.state_container.last_id = last_id
+    
+    def set_player(self, player_id):
+        self.state_container.player = player_id
 
 class Game(Container):
     def __init__(self, screen, collision_grid_width, scene_manager):
