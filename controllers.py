@@ -18,6 +18,7 @@ class EnemyController:
             origin = Vector2(transform.x, transform.y)
             angle = self.game.helpers.angle_toward(origin, target)
             transform.rotation = angle
+            #transform.rotation += 20 * self.game.dt
 
     def get_action(self, event):
         pass

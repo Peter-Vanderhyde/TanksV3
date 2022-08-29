@@ -162,8 +162,8 @@
         "create frames":{
             "properties":{
                 "effect":{
-                    "image":16,
-                    "scale":2
+                    "image":23,
+                    "scale":4
                 }
             }
         }
@@ -180,7 +180,7 @@
         "create frames":{
             "properties":{
                 "effect":{
-                    "image":16,
+                    "image":23,
                     "scale":2
                 }
             }

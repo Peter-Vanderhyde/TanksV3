@@ -107,7 +107,8 @@
         "duration":1,
         "initial frame":{
             "barrel":{
-                "image":"0"
+                "image":"0",
+                "scale":1.1
             },
             "sound":{
                 "name":"pop_high",
@@ -119,7 +120,8 @@
                 "delay":0.25,
                 "properties":{
                     "barrel":{
-                        "image":"1"
+                        "image":"1",
+                        "scale":1.08
                     }
                 }
             },
@@ -127,7 +129,8 @@
                 "delay":0.25,
                 "properties":{
                     "barrel":{
-                        "image":"2"
+                        "image":"2",
+                        "scale":1.06
                     }
                 }
             },
@@ -135,7 +138,8 @@
                 "delay":0.25,
                 "properties":{
                     "barrel":{
-                        "image":"3"
+                        "image":"3",
+                        "scale":1.04
                     }
                 }
             },
@@ -143,7 +147,8 @@
                 "delay":0.25,
                 "properties":{
                     "barrel":{
-                        "image":"4"
+                        "image":"4",
+                        "scale":1.02
                     }
                 }
             }

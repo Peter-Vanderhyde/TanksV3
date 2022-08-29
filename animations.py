@@ -55,7 +55,7 @@ def format_animations():
                             else:
                                 addition[image][string] = first[image][string] + (i + 1) * (value - first[image][string]) / largest
                     animation["frames"].append({
-                        "delay":1 / largest,
+                        "delay":1 / (largest + 1),
                         "properties":addition
                     })
                 last = animation["frames"][-1]
