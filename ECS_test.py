@@ -18,7 +18,6 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
-# Lerp the angle of the enemies toward the player
 # Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?

@@ -318,6 +318,7 @@ class Game(GameState):
         self.game.action_handler.get_player_input(event)
 
     def update(self, frame_time):
+        # Changes the speed of the game
         #frame_time /= 2
         game = self.game
         game.accumulator += frame_time

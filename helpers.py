@@ -139,3 +139,13 @@ def angle_toward(origin, target):
     angle = (target - origin).as_polar()[1]
     angle = convert_to_positive_angle(angle)
     return angle
+
+def fix_angle_difference(a1, a2):
+    """This function s=changes one of the angles by 360 degrees if needed.
+    This is used when the angle to the player goes from close to 0 to 
+    close to 360 so that the enemy doesn't spin around to point at them."""
+    if a1 - a2 > 180:
+        a2 += 360
+    elif a2 - a1 > 180:
+        a1 += 360
+    return a1, a2

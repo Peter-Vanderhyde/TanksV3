@@ -16,8 +16,11 @@ class EnemyController:
             p_trans = self.game.get_component(player, "transform")
             target = Vector2(p_trans.x, p_trans.y)
             origin = Vector2(transform.x, transform.y)
-            angle = self.game.helpers.angle_toward(origin, target)
-            transform.rotation = angle
+            target_angle = self.game.helpers.angle_toward(origin, target)
+            current_angle = transform.rotation
+            current_angle, target_angle = self.game.helpers.fix_angle_difference(current_angle, target_angle)
+            new_angle = Vector2(current_angle, 0).lerp(Vector2(target_angle, 0), 0.005 * (self.game.dt / 0.004)).x
+            transform.rotation = new_angle
             #transform.rotation += 20 * self.game.dt
 
     def get_action(self, event):
