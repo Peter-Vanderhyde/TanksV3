@@ -10,7 +10,7 @@ SOUND_PATH = "sounds/"
 SOUND_FALLOFF_RATE = 0.01
 MAX_SOUND_CHANNELS = 20
 # (<name>, <alpha>, <colorkey>)
-ASSETS = (
+IMAGES = (
     ("barrel", True, white),
     ("body_enemy", True, white),
     ("bullet_enemy", True, white),

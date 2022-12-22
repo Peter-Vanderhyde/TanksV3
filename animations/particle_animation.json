@@ -2,12 +2,12 @@
     "indexes":["particle"],
     "expired":{
         "duration":0.35,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "particle":{
                 "scale":1
             }
         },
+        "on finish":["destroy component"],
         "frames":[
             {
                 "delay":1,

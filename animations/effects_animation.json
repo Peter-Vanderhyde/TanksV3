@@ -2,13 +2,13 @@
     "indexes":["effect"],
     "collected experience":{
         "duration":0.5,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "effect":{
                 "image":0,
                 "scale":1
             }
         },
+        "on finish":["destroy component"],
         "frames":[
             {
                 "delay":0.2,
@@ -59,13 +59,13 @@
     },
     "healing plus":{
         "duration":0.25,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "effect":{
                 "image":"healing_plus",
                 "scale":0
             }
         },
+        "on finish":["destroy component"],
         "frames":[
             {
                 "delay":0.1,
@@ -95,13 +95,13 @@
     },
     "spawn wave":{
         "duration":0.75,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "effect":{
                 "image":"wave_1",
                 "scale":1
             }
         },
+        "on finish":["destroy component"],
         "frames":[
             {
                 "delay":0.15,
@@ -152,13 +152,13 @@
     },
     "player vortex":{
         "duration":0.8,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "effect":{
                 "image":"00",
                 "scale":4
             }
         },
+        "on finish":["destroy component"],
         "create frames":{
             "properties":{
                 "effect":{
@@ -170,13 +170,13 @@
     },
     "enemy vortex":{
         "duration":0.8,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "effect":{
                 "image":"00",
                 "scale":4
             }
         },
+        "on finish":["destroy component"],
         "create frames":{
             "properties":{
                 "effect":{

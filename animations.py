@@ -13,8 +13,10 @@ import json
 # ----------------------------------
 # destroy component
 # spawn tank particles
+# spawn bullet particles
 #TODO Change it so it can do things on whatever frame it wants to
 
+# Each string key should be 
 animations = {
     "player tank":"player_tank_animation.json",
     "enemy tank":"player_tank_animation.json",
@@ -24,6 +26,8 @@ animations = {
 }
 
 def load_animations(path):
+    """When this function is called, it replaces each of the values in the dictionary
+    with a loaded json object of that file."""
     for anim_name, anim_path in animations.items():
         with open(path + anim_path) as f:
             animations[anim_name] = json.load(f)
@@ -43,7 +47,7 @@ def format_animations():
                 for image, props in animation["create frames"]["properties"].items():
                     image_amounts.append(props["image"])
                 largest = max(image_amounts)
-                first = animation["initial frame"]
+                first = animation["initial frame properties"]
                 last = animation["create frames"]["properties"]
                 for i in range(largest):
                     addition = {}

@@ -2,21 +2,21 @@
     "indexes":["bullet"],
     "collided":{
         "duration":0,
-        "on finish":["destroy component", "spawn bullet particles"],
-        "initial frame":{
-            "bullet":{
-                "scale":1
-            }
-        }
-    },
-    "expired":{
-        "duration":0.3,
-        "on finish":["destroy component"],
-        "initial frame":{
+        "initial frame properties":{
             "bullet":{
                 "scale":1
             }
         },
+        "on finish":["destroy component", "spawn bullet particles"]
+    },
+    "expired":{
+        "duration":0.3,
+        "initial frame properties":{
+            "bullet":{
+                "scale":1
+            }
+        },
+        "on finish":["destroy component"],
         "frames":[
             {
                 "delay":1,

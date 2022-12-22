@@ -590,7 +590,7 @@ class AnimatorSystem(System):
                         state["current frame"] = 0
                         state["previous states"] = {}
                         state["played sound"] = False
-                        self.apply_frame(component, state, animation_properties["initial frame"])
+                        self.apply_frame(component, state, animation_properties["initial frame properties"])
                         if duration == 0:
                             self.end_animation(component, state)
                             if "done with animation" in component.current_animations:

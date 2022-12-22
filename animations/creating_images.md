@@ -1,0 +1,2 @@
+# Creating Animation Images Using Piskel
+It's certainly too tedious to draw several frames of an animation without the help of something. Create the frames in Piskel, then export them all with the same name. It should iterate each index up for the name of each image. Then, when creating an animation, use the "create frames" property to easily generate the frame pieces for each image.

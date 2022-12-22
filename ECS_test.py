@@ -1,5 +1,6 @@
 from pathlib import Path
 import pygame
+import camera
 import controllers
 import components
 import actions
@@ -18,6 +19,7 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
+# Only enable shooting once spawn animation is finished
 # Make death screen
 # Make the collectible particles add xp not health
 # Add slight magnetics?
@@ -47,14 +49,21 @@ def load_image(name, alpha=True, colorkey=()):
     return image
 
 def load_images():
-    d = {}
-    for asset in settings.ASSETS:
+    """settings.IMAGES is a tuple of tuples, each of which contain
+    (image name, alpha bool, colorkey color)"""
+    images_dict = {}
+    for asset in settings.IMAGES:
         image = load_image(*asset)
-        d.update({asset[0]:image})
+        images_dict.update({asset[0]:image})
     
-    return d
+    return images_dict
 
 def load_animation_images():
+    """Searches through the animations folder for any png images, loads the image, then saves it
+    in the game's images dictionary as {image_path:image_object}. It then returns the full dictionary."""
+
+    # This is first called to correctly format any animations using the "create frames" option.
+    # [More Info](animation_syntax.pdf#Create Frames)
     animations.format_animations()
     animation_images = {}
     for path in Path(settings.ANIMATION_PATH).rglob("*.png"):
@@ -135,7 +144,7 @@ class Game(Container):
 
         #TODO Fix this action controller system at some point
         self.action_handler = actions.ActionHandler(self)
-        self.camera = Camera(self)
+        self.camera = camera.Camera(self)
         self.grid_manager = spatial_hashing.GridManager
 
         self.images = {}
@@ -266,8 +275,8 @@ class Game(Container):
 
     def play_sounds(self):
         for sound_info in self.sounds_to_play:
-            if pygame.mixer.find_channel():
-                free_channel = pygame.mixer.find_channel()
+            free_channel = pygame.mixer.find_channel()
+            if free_channel:
                 sound, sound_position = sound_info
                 sound_position = Vector2(sound_position)
                 camera_pos = self.camera.corner + (self.camera.width / 2, self.camera.height / 2)
@@ -281,58 +290,6 @@ class Game(Container):
                 self.sounds_to_play.pop(0)
             else:
                 return
-                
-
-class Camera:
-    def __init__(self, game, target_id=None):
-        self.game = game
-        self.target_id = target_id
-        self.target = None
-        self.velocity = Vector2(0, 0)
-        self.corner = Vector2(0, 0)
-        self.width, self.height = self.game.screen.get_size()
-        if self.target_id is not None:
-            self.set_target(self.target_id)
-
-    def set_target(self, target_id, jump=False):
-        try:
-            self.target = self.game.get_component(target_id, "transform")
-            self.target_id = target_id
-            if jump:
-                self.set_position(self.target)
-        except KeyError:
-            raise AttributeError("Camera target does not exist or does not have a transform component.")
-    
-    def clear_target(self):
-        self.target_id = None
-        self.target = None
-    
-    def set_position(self, position):
-        self.corner = Vector2(position.x - self.width // 2, position.y - self.height // 2)
-    
-    def update(self):
-        if self.target is not None:
-            center = Vector2(self.corner.x + self.width // 2, self.corner.y + self.height // 2)
-            self.velocity = self.velocity.lerp((Vector2(self.target.x, self.target.y) - center) * 4, 1)
-
-            self.corner += self.velocity * self.game.dt
-    
-    def draw_grid(self):
-        """This function draw the background lines of the grid that move as the
-        player does."""
-
-        game = self.game
-        grid_box_w, grid_box_h = (settings.GRID_SIZE, settings.GRID_SIZE)
-
-        left_buffer = -self.corner.x % grid_box_w
-        for x in range(round(self.width // grid_box_w) + 1):
-            x_pos = left_buffer + x * grid_box_w
-            pygame.draw.line(game.screen, colors.light_gray, (x_pos, 0), (x_pos, self.height))
-
-        top_buffer = -self.corner.y % grid_box_h
-        for y in range(round(self.height // grid_box_h) + 1):
-            y_pos = top_buffer + y * grid_box_h
-            pygame.draw.line(game.screen, colors.light_gray, (0, y_pos), (self.width, y_pos))
 
 
 def create_game_instance(scene_manager):

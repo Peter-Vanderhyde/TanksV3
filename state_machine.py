@@ -5,7 +5,8 @@ import sys
 import random
 import colors
 import time
-from ECS_test import Camera, create_game_instance
+import camera
+from ECS_test import create_game_instance
 from ui import Anchor
 
 class StateContainer:
@@ -59,10 +60,12 @@ class SceneManager:
         self.run()
     
     def run(self):
+        clock = pygame.time.Clock()
         while True:
             self.get_events()
             self.update()
             self.draw()
+            clock.tick(144)
     
     def get_events(self):
         for event in pygame.event.get():
@@ -140,7 +143,7 @@ class GameState:
     
     def overwrite_state(self):
         self.game.state_container = StateContainer(self.game)
-        self.game.camera = Camera(self.game)
+        self.game.camera = camera.Camera(self.game)
 
 
 class MainMenu(GameState):
@@ -319,7 +322,7 @@ class Game(GameState):
 
     def update(self, frame_time):
         # Changes the speed of the game
-        #frame_time /= 2
+        # frame_time /= 2
         game = self.game
         game.accumulator += frame_time
 
