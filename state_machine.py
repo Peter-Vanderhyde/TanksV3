@@ -321,9 +321,11 @@ class Game(GameState):
         self.game.action_handler.get_player_input(event)
 
     def update(self, frame_time):
-        # Changes the speed of the game
-        # frame_time /= 2
         game = self.game
+        # frame_time orchestrates the speed of things happening in the world
+        # game_speed is a way for the game to affect how fast it can run
+        # so it could implement slow motion later
+        frame_time *= game.game_speed
         game.accumulator += frame_time
 
         game.get_systems()["life timer"].update(frame_time)
@@ -338,7 +340,7 @@ class Game(GameState):
             game.accumulator -= frame_time
         
         game.get_systems()["animator"].update(frame_time)
-        #game.play_sounds()
+        game.play_sounds()
         game.sounds_to_play = []
     
     def draw(self):

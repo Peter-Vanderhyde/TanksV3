@@ -9,6 +9,8 @@ ANIMATION_PATH = "animations/"
 SOUND_PATH = "sounds/"
 SOUND_FALLOFF_RATE = 0.01
 MAX_SOUND_CHANNELS = 20
+DEFAULT_MIXER_FREQ = 44100
+
 # (<name>, <alpha>, <colorkey>)
 IMAGES = (
     ("barrel", True, white),
@@ -82,3 +84,5 @@ BARREL_WIDTH = 21
 
 GRID_SIZE = 100
 COLLISION_GRID_WIDTH = 80
+
+CAMERA_PAN_SPEED = 3.5

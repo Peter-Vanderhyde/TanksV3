@@ -4,6 +4,11 @@ from pygame.math import Vector2
 import math
 
 class EnemyController:
+    """
+    This class is in charge of enemy behavior. It is responsible for
+    shooting, aiming, and eventually movement.
+    """
+    
     def __init__(self, game, id, transform_component):
         self.game = game
         self.id = id
@@ -12,40 +17,47 @@ class EnemyController:
     def update(self):
         transform = self.transform_component
         player = self.game.get_player()
-        if player:
+        if player: # Player is alive
             p_trans = self.game.get_component(player, "transform")
             target = Vector2(p_trans.x, p_trans.y)
             origin = Vector2(transform.x, transform.y)
             target_angle = self.game.helpers.angle_toward(origin, target)
             current_angle = transform.rotation
+            # Used to fix angle discrepencies when going from 0 to 360 degrees
             current_angle, target_angle = self.game.helpers.fix_angle_difference(current_angle, target_angle)
+            # Slowly rotate toward player
             new_angle = Vector2(current_angle, 0).lerp(Vector2(target_angle, 0), 0.005 * (self.game.dt / 0.004)).x
             transform.rotation = new_angle
-            #transform.rotation += 20 * self.game.dt
 
     def get_action(self, event):
         pass
 
 class PlayerController:
-    def __init__(self, game, id, move_keys, transform_component):
+    """
+    Handles player input.
+    """
+    
+    def __init__(self, game, id, move_keys, transform_component, physics_component):
         self.game = game
         self.id = id
         self.move_keys = move_keys
         self.transform_component = transform_component
+        self.physics_component = physics_component
         self.velx = 0
         self.vely = 0
     
     def update(self):
         # Point player towards mouse
         transform = self.transform_component
+        physics = self.physics_component
         distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
         angle = distance_between.as_polar()[1]
         transform.rotation = angle
 
         # Setting the target velocity to key presses
-        physics = self.game.get_component(self.id, "physics")
         physics.target_velocity = Vector2(self.velx, self.vely)
         if (self.velx, self.vely) != (0, 0):
+            # A key is being pressed
             physics.target_velocity.scale_to_length(physics.max_speed)
     
     def get_action(self, event):

@@ -38,7 +38,7 @@ def spawn_particles(component, amount, source_string, spawn_point, rotation, sca
             f"{particle}", *new_args))
 
 def handle_collision(component_a, component_b):
-    parent_b_id = component_b.collision_id
+    parent_b_id = component_b.parent_id
     game = component_a.game
     if component_a.collision_category == "projectiles":
         if component_b.collision_category == "actors":
@@ -48,8 +48,8 @@ def handle_collision(component_a, component_b):
             game.add_action(game.actions.Damage(parent_b_id, damage))
             game.get_component(component_b.id, "animator").play("damaged")
             if game.get_property(component_b.id, "health") - damage <= 0:
-                if game.camera.target_id == component_b.collision_id:
-                    game.add_action(game.actions.FocusCamera(component_a.collision_id))
+                if game.camera.target_id == component_b.parent_id:
+                    game.add_action(game.actions.FocusCamera(component_a.parent_id))
                 
                 game.get_component(component_b.id, "animator").play("die")
                 game.add_action(game.actions.StopFiringBarrels(component_b.id))
@@ -85,7 +85,7 @@ def tank_death(component):
         rotation=[0, 360],
         scale=[1, 1.5],
         speed=[10, 80],
-        spin_rate=20,
+        spin_rate=10,
         spin_friction=False,
         collide=True)
     component.game.helpers.spawn_particles(collider,
@@ -141,7 +141,7 @@ def angle_toward(origin, target):
     return angle
 
 def fix_angle_difference(a1, a2):
-    """This function s=changes one of the angles by 360 degrees if needed.
+    """This function changes one of the angles by 360 degrees if needed.
     This is used when the angle to the player goes from close to 0 to 
     close to 360 so that the enemy doesn't spin around to point at them."""
     if a1 - a2 > 180:
@@ -149,3 +149,11 @@ def fix_angle_difference(a1, a2):
     elif a2 - a1 > 180:
         a1 += 360
     return a1, a2
+
+def format_barrels(cooldowns_list):
+    """
+    Format the list required by the barrel manager using a list of cooldowns for each
+    of the barrels of the entity.
+    """
+
+    return [[cooldown, index] for cooldown in cooldowns_list for index in range(len(cooldowns_list))]

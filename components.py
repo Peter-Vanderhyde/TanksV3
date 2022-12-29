@@ -15,19 +15,27 @@ Transform: (x, y, rotation, scale)
 Physics: (angle, speeds: [<max_speed>, <current_speed>, <target_speed>], rotational_force, acceleration, deceleration, friction, transform_component, rotational_friction=True)
 Graphics: (layer-(0 is the bottom layer), images: [(<name>, <offset_position>, <rotation>, <scale_offset>), (etc.)], transform_component)
 Controller: (controller_class)
-Enemy_Controller: (TBD)
-Player_Controller: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
-Barrel_Manager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
-Life_Timer: (start_time, duration)
-Collider: (collision_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes', 'particles], transform_component)
+EnemyController: (TBD)
+PlayerController: (move_keys: {'left':<key>, 'right':..., 'up':..., 'down':...}, transform_component)
+BarrelManager: (barrels: [[<last_shot>, <cooldown>, <image_index>], [etc.]], shooting, owner_string, graphics_component, transform_component)
+LifeTimer: (start_time, duration)
+Collider: (parent_id, radius, offset, collision_category, collidable_categories: ['actors', 'projectiles', 'shapes', 'particles], transform_component)
+HealthBar
+Animator
+UI
 
 '''
 
 
 class Component:
+    """
+    The base function that all components use. A component is stored in a list of components of the
+    same type of component. It keeps track of the next unused component for easy reference.
+    """
 
     def __init__(self, game, next_available):
         self.game = game
+        # A reference to what is the next nearest unused component in the list of components
         self.next_available = next_available
         self.id = None
     
@@ -37,6 +45,9 @@ class Component:
         pass
 
 class Transform(Component):
+    """
+    This component stores the x, y, rotation, and scale information of an entity.
+    """
 
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -49,6 +60,11 @@ class Transform(Component):
         self.scale = scale
 
 class Physics(Component):
+    """
+    This component keeps track of an entity's max speed, rotational force, acceleration speed,
+    deceleration speed, friction, current velocity, target velocity, rotation friction, and a
+    reference to a transform component.
+    """
 
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
@@ -68,6 +84,11 @@ class Physics(Component):
         self.rotation_friction = rotation_friction
 
 class Graphics(Component):
+    """
+    This component handles the different images the entity is composed of and updating said images.
+    It keeps track of what layer the entity is drawn on as well (0 is the farthest back).
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -76,7 +97,10 @@ class Graphics(Component):
         self.layer = layer
         self.transform_component = transform_component
         # images = [[<name>, <offset_position>, <rotation>, <scale_offset>], [etc.]]
+        # The offset position is the offset from the center of the entity
         self.images = images
+        # The following properties are used to signal when certain changes have occured and thus
+        # the look of the entity and its images needs to be updated accordingly
         self.image_edits = [{}] * len(images)
         self.last_rotation = None
         self.last_edits = [{}] * len(images)
@@ -85,6 +109,10 @@ class Graphics(Component):
         self.reset_edits(list(range(len(images))))
     
     def switch_image_frame(self, index, new_image):
+        """
+        This indicates that an animation has changed an image in the entity to a different image.
+        """
+        
         if new_image == None:
             self.image_edits[index]["image"] = False
         else:
@@ -96,15 +124,26 @@ class Graphics(Component):
             self.image_edits[index] = {"image":True,"position":Vector2(0, 0),"rotation":0,"scale":1}
 
 class Controller(Component):
+    """
+    This class uses the PlayerController and EnemyController classes to update the movement and
+    behavior of entities.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
     def activate(self, id, controller_name, *args):
         self.id = id
         self.controller_name = controller_name
+        # Sets its class based on if Player Controller or Enemy Controller was passed in
         self.controller_class = self.game.controllers.name_dict[controller_name](self.game, self.id, *args)
 
 class BarrelManager(Component):
+    """
+    This handles the barrels of entities to affect when they shoot, their cooldown, a reference
+    to the image being used for them, etc.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -124,6 +163,11 @@ class BarrelManager(Component):
         self.animator_component = animator_component
 
 class LifeTimer(Component):
+    """
+    This component is for entities with a set lifetime so that it can be
+    destroyed after that length of time.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -134,29 +178,42 @@ class LifeTimer(Component):
         self.animator_component = animator_component
 
 class Collider(Component):
+    """
+    This component interacts with the collision map for efficient collision detection.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, collision_id, radius, offset, collision_category, collidable_categories, particle_source_name, transform_component):
+    def activate(self, id, parent_id, radius, offset, collision_category, collidable_categories, particle_source_name, transform_component):
         self.id = id
-        self.collision_id = collision_id
-        # This is the id of the actual parent entity this collider is connected
+        # This parent_id is the id of the parent entity this collider is connected
         # to. This allows easy reference when collisions are detected for changing
         # health, experience, etc.
+        self.parent_id = parent_id
+        # All colliders are circular
         self.radius = radius
+        # This is the offset from the center of the entity
         self.offset = offset
-        self.collision_category = collision_category
         # The category that this collider component falls under.
-        # It can only have one.
-        self.collidable_categories = collidable_categories
+        # It can only have one as this determines which collision map to be placed in.
+        self.collision_category = collision_category
         # This is a list of all of the collision categories that this collider can collide
         # with. Any colliders not under these categories will be ignored when checking collisions
+        self.collidable_categories = collidable_categories
         self.particle_source_name = particle_source_name
         self.transform_component = transform_component
+
         self.collision_cells = set()
+        # Disables collisions for instances such as a death animation or invincibility
         self.inactive = False
 
 class HealthBar(Component):
+    """
+    This gives the entity a health bar, but it needs to have a 'health' property to be based
+    off of. It can be offset as far from the center of the entity as needed.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -170,47 +227,66 @@ class HealthBar(Component):
         self.game.add_property(self.id, "ghost health", self.game.get_property(self.id, "health"))
 
 class Animator(Component):
+    """
+    This component deals with animating entities based of the animation json files.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
     def activate(self, id, animation_set, current_animations, graphics_component, transform_component):
         self.id = id
+        # Could also be thought of as the animation collection
         self.animation_set = ""
+        # Multiple animations can be played simultaneously if they do not inhibit each other
+        # The given current animations is handled later
         self.current_animations = []
+        # Properties of the animations
         self.animation_states = []
         self.graphics_component = graphics_component
         self.transform_component = transform_component
         self.current_frame = None
-        self.duration_multipliers = [1] * len(current_animations)
+        # A dictionary of all of the relevant images for this animation set
         self.images = {}
-        self.set_animation_set(animation_set)
+        # Reset the animation data
+        self.initialize_animation_set(animation_set)
         for animation in current_animations:
+            # Set the properties of the animation and give it a default duration multiplier of 1
             self.add_animation_state(animation, 1)
     
     def add_animation_state(self, animation, duration_multiplier):
-        if animation in self.current_animations:
-            self.stop(animation)
+        """
+        Sets the properties of an animation to the default values and sets the duration
+        multiplier. The bigger the number, the longer the animation will play.
+        """
+        
         self.current_animations.append(animation)
         self.animation_states.append({
             "animation":animation,
+            "duration multiplier":duration_multiplier,
             "current frame":None,
             "time accumulated":None,
             "frame time accumulated":None,
             "previous states":{},
             "played sound":False
         })
-        self.duration_multipliers.append(duration_multiplier)
     
     def get_state_of_animation(self, animation):
-        """Gives you the animation, current_frame, start_time, and frame_start_time of an animation"""
+        """
+        Returns the animation, duration_multiplier, current_frame, start_time, and frame_start_time of an animation.
+        """
 
         try:
             index = self.current_animations.index[animation]
             return self.animation_states[index]
         except ValueError:
-            raise ValueError("Tried to get state of animation not in Animator!")
+            raise ValueError("Tried to get state of animation that is not in Animator!")
     
-    def set_animation_set(self, animation_set):
+    def initialize_animation_set(self, animation_set):
+        """
+        Set up the animation for the first time with default data.
+        """
+        
         self.animation_set = animation_set
         self.images = {}
         for index, name in enumerate(self.game.animations[animation_set]["indexes"]):
@@ -219,18 +295,31 @@ class Animator(Component):
         self.animation_states = []
     
     def play(self, animation, duration_multiplier=1):
+        """
+        Stops the animation if it's currently playing and then starts playing it again.
+        """
+        
+        if animation in self.current_animations:
+            self.stop(animation)
         self.add_animation_state(animation, duration_multiplier)
     
     def stop(self, animation):
+        """
+        Removes the given animation from the current animations.
+        """
+        
         try:
             index = self.current_animations.index(animation)
             self.current_animations.remove(animation)
             self.animation_states.pop(index)
-            self.duration_multipliers.pop(index)
         except ValueError:
             pass
 
 class UI(Component):
+    """
+    This component is used to create text or buttons.
+    """
+    
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
@@ -241,22 +330,51 @@ class UI(Component):
             self.game.ui.Text:"text",
             self.game.ui.Button:"button"
         }
+        # This component takes in an instance of a UI text or button object, so it gets its name based on the type
         self.name = names[type(ui_class)]
         self.checks_events = self.name in ["button"]
 
 class System:
+    """
+    This is the base class for all systems. Each component type has a different system which
+    holds a list of all its components. It handles creating new components, removing components,
+    partitioning a buffer of components, and also has an update function which each system can override
+    to update each component in whatever way is necessary.
+    """
+    
     def __init__(self, component_name, component_type):
         self.component_name = component_name
+        # A reference to the component type so it can create
+        # new instances when needed
         self.component_type = component_type
+        # The list that holds all component instances. Each entity holds
+        # the index reference of their component
         self.components = []
+        # An index pointing to the first component that is not in use
+        # When it is none, there are no more components available, so
+        # the system needs to create another component buffer
         self.first_available = None
+        # The highest index of a component in use
+        # This tells the upate function that it doesn't need to update any
+        # components past this index
         self.farthest_component = 0
     
     def add_component(self, game, *args, **kwargs):
+        """
+        This function partitions more instances of components if necessary,
+        then activates an unused component that can be used, and returns
+        the index of it for the entity to use as a reference.
+        """
+        
         if self.first_available is None:
-            self.partition(game, max(len(self.components) + 1, 10)) # Partitions at least 10 empty spaces, but otherwise doubles the size
+            # Partitions at minimum 10 empty components, but otherwise doubles the size
+            self.partition(game, max(len(self.components) + 1, 10))
+        
+        # Uses the first available unused component
         index = self.first_available
+        # Populates the unused component with whatever data that component requires
         self.components[index].activate(*args, **kwargs)
+        # Each component keeps track of what the next unused component index is past itself
         self.first_available = self.components[index].next_available
         if index > self.farthest_component:
             self.farthest_component = index
@@ -264,36 +382,57 @@ class System:
     
     def remove_component(self, index):
         try:
+            # The update function uses the id to check if the component is in use or not
+            # so set the id to None, but the rest of the data doesn't need to be touched
             self.components[index].id = None
             self.components[index].next_available = self.first_available
             self.first_available = index
             if index == self.farthest_component:
-                while index - 1 >=0 and self.components[index - 1].id is None:
+                while index - 1 >= 0 and self.components[index - 1].id is None:
                     index -= 1
                 self.farthest_component = index
         except:
             raise Exception("Unable to remove component.")
     
     def partition(self, game, amount):
+        """
+        Instead of creating new instances of components on the fly when needed,
+        the prevent slowdown, this function creates many instances of the components
+        at once. The component has to be activated with the activate function before
+        it is actually put into use.
+        """
+        
+        # link is a reference to the next unused component
         link = None
         new_comps = []
-        insert = new_comps.insert
         length = len(self.components)
-        for i in range(amount):
-            comp = self.component_type(game, link)
-            insert(0, comp)
+        for _ in range(amount):
+            component = self.component_type(game, link)
+            new_comps.insert(0, component)
+            # Start link at the last index and each time after, subtract one
             if link is None:
                 link = length + amount - 1
             else:
                 link -= 1
+        # Since the partition is used if there are no longer any available components,
+        # it's known that the next available component will be the first newly created component
         self.first_available = length
         self.components += new_comps
     
     def update(self):
-        """Contains whatever code should be run for that component every loop"""
+        """
+        Contains whatever code should be run for that component every loop.
+        Is overridden as necessary by each component.
+        """
+        
         pass
 
 class DisplayedSystem(System):
+    """
+    This is a subclass of the System class for use on components
+    that have a visual aspect and need to display something on the screen.
+    """
+    
     def update(self):
         self.update_and_draw()
 
@@ -301,74 +440,105 @@ class DisplayedSystem(System):
         pass
 
 class TransformSystem(System):
+    """
+    The transform system that holds all of the transform components.
+    """
+    
     def __init__(self):
         super().__init__("transform", Transform)
 
 class PhysicsSystem(System):
+    """
+    The physics system holds and updates all of the physics components.
+    """
+    
     def __init__(self):
         super().__init__("physics", Physics)
     
     def update(self, dt):
+        """
+        This update function handles any kind of movement for an entity be it for
+        moving or rotations. It takes friction into account where applicable.
+        """
+        
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
-            if component.id is not None:
+            if component.id is not None: # The component is currently in use
+                # Entities may want to accelerate at a different rate than they decelerate
+                # This is handled by the components decel and accel values
+                # The delta time is divided by 0.004 to allow the component's
+                # variables to use more human usable values instead of tiny values
                 if component.target_velocity == Vector2(0, 0):
                     rate_of_change = component.decel * component.friction * (dt / 0.004)
                 else:
                     rate_of_change = (component.accel - component.accel * component.friction) * (dt / 0.004)
                 
                 if rate_of_change > 1:
+                    # The rate of change is what's used to linearly interpolate from the current
+                    # velocity to the desired velocity, so reaching that velocity any faster
+                    # than instantaneously doesn't make sense
                     rate_of_change = 1
                 component.velocity = component.velocity.lerp(component.target_velocity, rate_of_change)
 
+                # Have to use two lines because the transform component only stores the position as
+                # x and y, not a vector
                 component.transform_component.x += component.velocity.x * dt
                 component.transform_component.y += component.velocity.y * dt
 
+                # Again, the mutliplying by 10 is so the rotational force value is more readable
                 component.transform_component.rotation += component.rotational_force * 10 * dt
+                # Some entities want a constant spin with no slowdown. This code is for
+                # rotations with friction applied
                 if component.rotation_friction and component.rotational_force:
+                    # Only using this vector for its length
+                    # I initialize it as a normalized vector
                     v = Vector2(1, 0) * component.rotational_force
-                    v = v.lerp(Vector2(), min(component.rotational_force * 0.05 * dt, 0.05))
+                    v = v.lerp(Vector2(0), min(component.rotational_force * 0.05 * dt, 0.05))
                     component.rotational_force = v.length()
 
 class GraphicsSystem(DisplayedSystem):
+    """
+    The graphics system holds and updates all of the graphics components. It handles
+    updating image sprites of entities.
+    """
+    
     def __init__(self):
         super().__init__("graphics", Graphics)
         self.layer_indexes = []
         self.layers = 0
     
     def check_layer_exists(self, layer):
-        """Instead of hardcoding the number of graphics layers that I will use, I let it create a new
-        layer whenever a higher one is needed. 0 is the bottom layer."""
+        """
+        Instead of hardcoding the number of graphics layers that I will use, I let it create a new
+        layer whenever a higher one is needed. 0 is the bottom layer (background).
+        """
 
         while self.layers < layer + 1:
             self.layer_indexes.append([])
             self.layers += 1
     
     def add_component(self, game, *args, **kwargs):
+        """
+        Along with adding the new component, this function saves which layer this
+        component is drawn on so it can draw each layer in the correct order.
+        """
+        
         layer = args[1]
         self.check_layer_exists(layer)
-        if self.first_available is None:
-            self.partition(game, max(len(self.components) + 1, 10))
-        index = self.first_available
-        self.components[index].activate(*args, **kwargs)
-        self.first_available = self.components[index].next_available
+        index = super().add_component(game, *args, **kwargs)
+        # When drawing, the graphics system will loop through the components
+        # in each layer in order so the low number layers are drawn first
         self.layer_indexes[layer].append(index)
-        if index > self.farthest_component:
-            self.farthest_component = index
         return index
     
     def remove_component(self, index):
-        try:
-            self.components[index].id = None
-            self.components[index].next_available = self.first_available
-            self.layer_indexes[self.components[index].layer].remove(index)
-            self.first_available = index
-            if index == self.farthest_component:
-                while index - 1 >=0 and self.components[index - 1].id is None:
-                    index -= 1
-                self.farthest_component = index
-        except:
-            raise Exception("Unable to remove component.")
+        """
+        This function removes the component from the layer indexes before removing
+        the component.
+        """
+        
+        self.layer_indexes[self.components[index].layer].remove(index)
+        super().remove_component(index)
     
     def update_and_draw(self):
         for layer in self.layer_indexes:
@@ -513,7 +683,7 @@ class ColliderSystem(System):
                 for other_collider in colliding_with_set:
                     other_transform = other_collider.transform_component
                     other_origin = Vector2(other_transform.x, other_transform.y) + other_collider.offset
-                    if component.collision_id != other_collider.collision_id and not other_collider.inactive and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
+                    if component.parent_id != other_collider.parent_id and not other_collider.inactive and self.distance_between_squared(origin, other_origin) < (component.radius + other_collider.radius) ** 2:
                         game.helpers.handle_collision(component, other_collider) # Checks what the categories are of the colliding objects, and acts accordingly.
 
 class HealthBarSystem(DisplayedSystem):
@@ -578,11 +748,11 @@ class AnimatorSystem(System):
                 
                 game = component.game
                 anim_set = component.animation_set
-                for current_animation, animation_state, animation_duration_multiplier in zip(component.current_animations, component.animation_states, component.duration_multipliers):
+                for current_animation, animation_state in zip(component.current_animations, component.animation_states):
                     if "done with animation" == current_animation:
                         break
                     animation_properties = game.animations[anim_set][current_animation]
-                    duration = animation_properties["duration"] * animation_duration_multiplier
+                    duration = animation_properties["duration"] * animation_state["duration multiplier"]
                     state = animation_state
                     if state["time accumulated"] == None:
                         state["time accumulated"] = 0

@@ -6,15 +6,24 @@ from pygame.math import Vector2
 class Camera:
     def __init__(self, game, target_id=None):
         self.game = game
+        # The id of the entity is is looking at
         self.target_id = target_id
-        self.target = None
-        self.velocity = Vector2(0, 0)
-        self.corner = Vector2(0, 0)
-        self.width, self.height = self.game.screen.get_size()
         if self.target_id is not None:
             self.set_target(self.target_id)
+        else:
+            # If the target is None, the camera will stay stationary where it is
+            self.target = None
+        self.velocity = Vector2(0, 0)
+        # The top left corner of the camera/screen that everything is drawn based off of
+        self.corner = Vector2(0, 0)
+        self.width, self.height = self.game.screen.get_size()
 
     def set_target(self, target_id, jump=False):
+        """
+        Move the camera's center focal point to the position of the entity
+        of the given id.
+        """
+        
         try:
             self.target = self.game.get_component(target_id, "transform")
             self.target_id = target_id
@@ -24,22 +33,37 @@ class Camera:
             raise AttributeError("Camera target does not exist or does not have a transform component.")
     
     def clear_target(self):
+        """
+        Reset the camera to not look at anything.
+        """
+        
         self.target_id = None
         self.target = None
     
     def set_position(self, position):
+        """
+        Position the center of the camera to the given position.
+        """
+        
         self.corner = Vector2(position.x - self.width // 2, position.y - self.height // 2)
     
     def update(self):
+        """
+        Move the camera to follow the target's position with linear interpolation
+        to create a delayed panning effect.
+        """
+        
         if self.target is not None:
             center = Vector2(self.corner.x + self.width // 2, self.corner.y + self.height // 2)
-            self.velocity = self.velocity.lerp((Vector2(self.target.x, self.target.y) - center) * 4, 1)
+            self.velocity = self.velocity.lerp((Vector2(self.target.x, self.target.y) - center) * settings.CAMERA_PAN_SPEED, 1)
 
             self.corner += self.velocity * self.game.dt
     
     def draw_grid(self):
-        """This function draw the background lines of the grid that move as the
-        player does."""
+        """
+        This function draws the background lines of the grid that move as the
+        player does.
+        """
 
         game = self.game
         grid_box_w, grid_box_h = (settings.GRID_SIZE, settings.GRID_SIZE)
