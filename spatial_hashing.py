@@ -30,7 +30,7 @@ class GridManager:
         These are all of the categories that the collider should check for collisions with.
         This allows only colliding with some objects, but not others."""
         transform = collider.transform_component
-        origin = Vector2(transform.x, transform.y)
+        origin = transform.pos
         rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
         new_cells = []
         for cell in self.get_cells_for_rect(rect):
@@ -41,7 +41,7 @@ class GridManager:
     def move_collider(self, collider):
         """Check to see if the rectangle is no longer in some cells, or needs to be added to others."""
         transform = collider.transform_component
-        origin = Vector2(transform.x, transform.y)
+        origin = transform.pos
         rect = pygame.Rect(origin + collider.offset - Vector2(collider.radius), (collider.radius * 2, collider.radius * 2))
         old_cells = collider.collision_cells
         new_cells = set(self.get_cells_for_rect(rect))

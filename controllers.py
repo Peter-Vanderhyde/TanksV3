@@ -20,7 +20,7 @@ class EnemyController:
         if player: # Player is alive
             p_trans = self.game.get_component(player, "transform")
             target = Vector2(p_trans.x, p_trans.y)
-            origin = Vector2(transform.x, transform.y)
+            origin = transform.pos
             target_angle = self.game.helpers.angle_toward(origin, target)
             current_angle = transform.rotation
             # Used to fix angle discrepencies when going from 0 to 360 degrees
@@ -50,7 +50,7 @@ class PlayerController:
         # Point player towards mouse
         transform = self.transform_component
         physics = self.physics_component
-        distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - Vector2(transform.x, transform.y)
+        distance_between = (pygame.mouse.get_pos() + self.game.camera.corner) - transform.pos
         angle = distance_between.as_polar()[1]
         transform.rotation = angle
 

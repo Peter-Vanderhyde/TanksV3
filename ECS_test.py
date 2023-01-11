@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 from pygame.locals import *
 from pygame.math import Vector2
+pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
 pygame.mixer.init()
 
