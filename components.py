@@ -1,6 +1,5 @@
 import pygame
 import math
-import time
 import settings
 from pygame.math import Vector2
 from pygame.locals import *
@@ -117,98 +116,54 @@ class Physics(Component):
 
 class Graphics(Component):
     """
-    This component handles the different images the entity is composed of and updating said images.
-    It keeps track of what layer the entity is drawn on as well (0 is the farthest back).
+    This component stores all the information about the images that comprise
+    the entity. Each image can be modified separate from each other, but will
+    also all change relative to the entity's properties changing.
     """
     
     def __init__(self, game, next_available):
         super().__init__(game, next_available)
     
-    def activate(self, id, layer, images_info, transform_component):
+    def activate(self, id, layer, images, transform_component):
         self.id = id
         self.layer = layer
         self.transform_component = transform_component
-        # images_info = [{"image", "position offset", "rotation offset", "scale offset"}, {etc.}]
-        # The offsets are the values applied after the entity's own properties are applied
-        # i.e. the image is rotated however much the entity is rotated and then rotated more based on its offset
-        self.images_info = images_info
-        # This keeps track of the last rotation and scale of the parent entity
-        # so the pieces can update appropriately
-        self.last_entity_props = {
-            "rotation":self.transform_component.rotation,
-            "scale":self.transform_component.scale
-        }
-        # The image_mods keep track of edits made to the individual images by things
-        # like the animation component
-        self.image_mods = [{}] * len(images_info)
-        self.reset_mods(list(range(len(images_info))))
-        # Make a list of images that can be modified
-        self.modifiable_images = [image_info["image"] for image_info in self.images_info]
+        # images = [[image, position offset, rotation offset, scale offset], [etc.]]
+        # Each of these properties are offset from the main entity's stats
+        self.images = [list(image_info.values()) for image_info in images]
+        # The attributes stored in these dictionaries can be modified to change
+        # each image offset from its base properties
+        self.image_edits = [{}] * len(images)
+        # Used to check if the main entity has rotated
+        self.last_rotation = None
+        # Used to detect any changes from the last known stats
+        self.last_edits = [{}] * len(images)
+        # The image can be altered here and reused to avoid expensive modification calculations
+        self.last_used_images = [element[0] for element in self.images]
+        # Used to detect changing of images
+        self.previous_images = [element[0] for element in self.images]
+        self.reset_edits(list(range(len(images))))
     
-    def reset_mods(self, indexes):
-        for index in indexes:
-            # Each property keeps track of the current value and the last value in case of changes
-            image = self.images_info[index]["image"]
-            self.image_mods[index] = {
-                                    "redraw":True,
-                                    "image":{"current":image, "previous":None},
-                                    "position":{"current":Vector2(0, 0), "previous":Vector2(0, 0)},
-                                    "rotation":{"current":0, "previous":0},
-                                    "scale":{"current":1, "previous":1}
-                                    }
-
-    def set_image(self, index, new_image):
+    def switch_image_frame(self, index, new_image):
         """
-        This exchanges an image that was being used for this piece of the sprite for a different one
+        Simply changes what image is used for this place in the entity.
         """
         
-        self.images_info[index]["image"] = new_image
-        self.set_image_property(index, "name", new_image)
-    
-    def set_image_property(self, image_index, image_property, value, set_current=False, set_previous=False):
-        property = self.image_mods[image_index][image_property]
-        if set_current:
-            property["current"] = value
-            if value != property["previous"]:
-                self.image_mods[image_index]["redraw"] = True
-        elif set_previous:
-            property["previous"] = value
-            if value != property["current"]:
-                self.image_mods[image_index]["redraw"] = True
+        if new_image == None:
+            self.image_edits[index]["image"] = False
         else:
-            if value != property["previous"]:
-                self.image_mods[image_index]["redraw"] = True
-            property.update({"current":value, "previous":property["current"]})
+            self.images[index][0] = new_image
+            # Signal that the image has changed and needs to be redrawn
+            self.image_edits[index]["image"] = True
     
-    def get_image_property(self, image_index, image_property, get_previous=False):
-        if get_previous:
-            return self.image_mods[image_index][image_property]["previous"]
-        else:
-            return self.image_mods[image_index][image_property]["current"]
-    
-    def update_image(self, index):
-        self.image_mods[index]["redraw"] = False
-    
-    def image_properties_were_updated(self, index):
-        return self.image_mods[index]["redraw"]
-    
-    def image_property_was_updated(self, index, property):
-        property = self.image_mods[index][property]
-        return property["current"] != property["previous"]
-    
-    def image_was_changed(self, index):
-        return self.image_property_was_updated(index, "image")
-    
-    def entity_was_updated(self):
-        transform = self.transform_component
-        if [transform.rotation, transform.scale] != self.last_entity_props.values():
-            self.last_entity_props.update({"rotation":transform.rotation, "scale":transform.scale})
-            return True
-        return False
+    def reset_edits(self, indexes):
+        for index in indexes:
+            # Set everything to default and signal a redraw
+            self.image_edits[index] = {"image":True,"position":Vector2(0, 0),"rotation":0,"scale":1}
 
 class Controller(Component):
     """
-    This class uses the PlayerController and EnemyController classes to update the movement and
+    This component uses the PlayerController and EnemyController classes to update the movement and
     behavior of entities.
     """
     
@@ -630,19 +585,19 @@ class GraphicsSystem(DisplayedSystem):
         for layer in self.layer_indexes:
             for component_index in layer:
                 component = self.components[component_index]
-                # Checks both if the component is active and whether it is within view
-                # It does it a cheap way by checking the center of the sprite, which
-                # would cause a bigger issue the bigger the sprite
-                if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(*component.transform_component.pos):
-                    # Loop through the images that make up the sprite
-                    for index, image_info in enumerate(component.images_info):
-                        # Check if something about the image changed and it needs to be redrawn
-                        # and also check that the image is actually big enough to draw
-                        if (component.was_updated(index) or component.entity_was_updated(index)) and component.get_image_property(index, "scale") != 0:
-                            image, offset_vector, rotation_offset, scale_offset = image_info
-                            if component.image_was_changed(index):
-                                # Make both the current and previous image the same so it won't update after this
-                                component.set_image_property(index, "image", image)
+                # Make sure the entity is within view by a simple calculation checking the center of the entity
+                # Not a good check for bigger entities
+                if component.id is not None and Rect(component.game.camera.corner, (component.game.camera.width, component.game.camera.height)).collidepoint(component.transform_component.x, component.transform_component.y):
+                    for index, image_info in enumerate(component.images):
+                        edits = component.image_edits[index]
+                        # Check if image needs to be redrawn and whether its big enough to draw
+                        if edits["image"] and edits["scale"] != 0:
+                            image, position_offset, rotation_offset, scale_offset = image_info
+
+                            position = position_offset + edits["position"]
+                            rotation = component.transform_component.rotation + edits["rotation"]
+                            scale = component.transform_component.scale * edits["scale"]
+                            if component.transform_component.rotation != component.last_rotation or component.last_edits[index] != edits or component.images[index][0] != component.previous_images[index]:
                                 ck = image.get_colorkey()
                                 width, height = image.get_size()
                                 image = pygame.transform.scale(image, (max(0, math.ceil(width * scale * scale_offset)), max(0, math.ceil(height * scale * scale_offset))))
@@ -652,38 +607,55 @@ class GraphicsSystem(DisplayedSystem):
                                 component.last_used_images[index] = image
                                 component.previous_images[index] = component.images[index][0]
                                 component.last_edits[index] = edits.copy()
-                            elif component.image_property_was_updated(index, "rotation") or component.image_property_was_updated(index, "scale"):
-
-                            position = offset_vector + component.get_image_property(index, "position")
-                            last_entity_rotation = component.last_entity_props["rotation"]
-                            last_entity_scale = component.last_entity_props["scale"]
-                            rotation = last_entity_rotation + component.get_image_property(index, "rotation")
-                            scale = last_entity_scale * component.get_image_property(index, "scale")
-                            width, height = component..get_size()
+                            width, height = component.last_used_images[index].get_size()
                             camera = component.game.camera
                             offset_x, offset_y = position.rotate(rotation)
                             component.game.screen.blit(component.last_used_images[index], (component.transform_component.x - width // 2 + offset_x - camera.corner.x, component.transform_component.y - height // 2 + offset_y - camera.corner.y))
                     component.last_rotation = component.transform_component.rotation
 
 class ControllerSystem(System):
+    """
+    This component deals with entities that will need some sort
+    of input to make decisions. It currently uses one component
+    for both user input and AI input, but this may change.
+    """
+    
     def __init__(self):
         super().__init__("controller", Controller)
 
     def update(self):
+        """
+        Updates the components in whatever way is necessary for them.
+        this could mean look at the mouse, or it could mean point
+        at the player.
+        """
+        
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
                 component.controller_class.update()
     
     def get_action_from_event(self, event):
+        """
+        This is used for any components that react to player input.
+        Each component can return a list of actions to be completed based
+        on the input.
+        """
+        
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                action = component.controller_class.get_action(event)
-                if action is not None:
-                    component.game.add_action(action)
+                action_list = component.controller_class.get_action(event)
+                for action in action_list:
+                    if action is not None:
+                        component.game.add_action(action)
 
 class BarrelManagerSystem(System):
+    """
+    This component is used to keep track of when a barrel can
+    shoot, and sets the animation.
+    """
+    
     def __init__(self):
         super().__init__("barrel manager", BarrelManager)
     
@@ -691,9 +663,12 @@ class BarrelManagerSystem(System):
         for i in range(min(self.farthest_component + 1, len(self.components))):
             component = self.components[i]
             if component.id is not None:
-                # update barrel animations?
+                # Each barrel manager has a shooting property to keep track of when it's shooting
+                # It should probably be changed as you would need a whole different manager to handle
+                # a barrel that uses a different key
                 if component.shooting:
                     for barrel in component.barrels:
+                        # This keeps track of how long since the barrel was last shot
                         barrel[0] += frame_time
                         last_shot_accumulation, cooldown, image_index = barrel
                         image, offset_vector, rotation_offset, scale_offset = component.graphics_component.images[image_index]

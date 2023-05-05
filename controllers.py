@@ -30,7 +30,7 @@ class EnemyController:
             transform.rotation = new_angle
 
     def get_action(self, event):
-        pass
+        return []
 
 class PlayerController:
     """
@@ -64,28 +64,30 @@ class PlayerController:
         action = self.game.actions
         if event.type == KEYDOWN:
             if event.key == self.move_keys["left"]:
-                return action.MoveLeft(self.id, True)
+                return [action.MoveLeft(self.id, True)]
             elif event.key == self.move_keys["right"]:
-                return action.MoveRight(self.id, True)
+                return [action.MoveRight(self.id, True)]
             elif event.key == self.move_keys["up"]:
-                return action.MoveUp(self.id, True)
+                return [action.MoveUp(self.id, True)]
             elif event.key == self.move_keys["down"]:
-                return action.MoveDown(self.id, True)
+                return [action.MoveDown(self.id, True)]
         elif event.type == KEYUP:
             if event.key == self.move_keys["left"]:
-                return action.MoveLeft(self.id, False)
+                return [action.MoveLeft(self.id, False)]
             elif event.key == self.move_keys["right"]:
-                return action.MoveRight(self.id, False)
+                return [action.MoveRight(self.id, False)]
             elif event.key == self.move_keys["up"]:
-                return action.MoveUp(self.id, False)
+                return [action.MoveUp(self.id, False)]
             elif event.key == self.move_keys["down"]:
-                return action.MoveDown(self.id, False)
+                return [action.MoveDown(self.id, False)]
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                return action.StartFiringBarrels(self.id)
+                return [action.StartFiringBarrels(self.id)]
         elif event.type == MOUSEBUTTONUP:
             if event.button == 1:
-                return action.StopFiringBarrels(self.id)
+                return [action.StopFiringBarrels(self.id)]
+        
+        return []
 
 name_dict = {
     'player': PlayerController,

@@ -21,6 +21,12 @@ pygame.init()
 pygame.mixer.init()
 
 #TODO
+# Change barrel manager to use a dictionary for key value pair names
+# Perhaps for pre-loading, setup pre-made combinations for shapes, player images, and enemies.
+#   Then connect each of them to which animations it is possible for them to use. The game can then
+#   pre-load whatever images at whatever rotations with whatever size changes may be used in the animations.
+#   This is probably a garbage way to do this. Maybe use cache like that on layered 3d project did?
+# Make changes to how graphics components handle modifications
 # Find some way so that there is a base thing for movement, so it just calls update on all the move things
 #   so they can update accordingly. Maybe they all need the camera or something.
 # I have a suspicion that the reason the barrel is stuck small sometimes while shooting is because
