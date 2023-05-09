@@ -5,7 +5,7 @@ import sys
 import random
 import colors
 import time
-from ECS_test import Camera, create_game_instance
+from main import Camera, create_game_instance
 from ui import Anchor
 
 class StateContainer:
