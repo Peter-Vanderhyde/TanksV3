@@ -49,7 +49,7 @@ class SceneManager:
     def __init__(self, screen, start_state):
         self.screen = screen
         self.game = create_game_instance(self)
-        self.states = states
+        self.states = states  # Declared at the bottom of the file
         self.start_state = start_state
         self.state = states[start_state]
         self.last_time = time.time()

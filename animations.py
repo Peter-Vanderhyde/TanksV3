@@ -16,7 +16,8 @@ import json
 # spawn bullet particles
 #TODO Change it so it can do things on whatever frame it wants to
 
-# Each string key should be 
+# Each string key should map to a folder of the same name containing the animation images
+# See the animation_syntax.PDF file for syntaxing
 animations = {
     "player tank":"player_tank_animation.json",
     "enemy tank":"player_tank_animation.json",

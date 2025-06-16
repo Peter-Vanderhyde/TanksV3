@@ -5,7 +5,7 @@ import pygame
 
 def spawn_shapes(game, amount, spawn_range):
     for i in range(amount):
-        spawn = Vector2(random.randint(spawn_range[0][0], spawn_range[1][0]), random.randint(spawn_range[0][1], spawn_range[1][1]))
+        spawn = Vector2(random.randint(int(spawn_range[0].x), int(spawn_range[1].x)), random.randint(int(spawn_range[0].y), int(spawn_range[1].y)))
         id = game.get_unique_id()
         rotation = random.uniform(0, 360)
         scale = 1

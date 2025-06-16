@@ -121,6 +121,25 @@ The scale and rotation editors are self-explanatory, however with image, it gets
 
 \<collection_name>/\<animation_name>/\<image_index_name>\_\<image_key_value>.png
 >i.e. player tank/shoot bullet/top layer_1.png  
+>This would map to the following animation syntax  
+```
+player_tank_animation.json
+
+(In 'animations.py' you would map the collection name to this file...
+animations = {"player tank":"player_tank_animation.json"})
+
+{
+    "indexes":["top layer"],  <- Image index name declaration
+    "shoot bullet":{  <- Animation name
+        "duration":0,
+        "initial frame properties":{
+            "top layer":{  <- Image index name
+                "image":"1"  <- Image key value
+            }
+        }
+    }
+}
+```
 
 > Note: If the image is changed on the final frame of the animation, it will likely be immediately changed by the next animation or the same animation looping. This means you will likely need to add another frame on the same that doesn't change images so that the final image frame can be viewed for a period of time.
 
@@ -139,8 +158,6 @@ example.json
 
 This will play whatever sound is saved to "fire_bullet" in the SOUNDS list in the settings file at 30% volume.
 
-
-Phew! That was a lot. Anyway, now that we understand how frames work, we can look at the last couple animation properties. The first
 
 #### Initial Frame Properties
 Phew! That was a lot. Anyway, now that we understand how frames work, we can look at the last couple animation properties. The first is the "initial frame properties" property. This is formatted the exact same as the frame properties that we just discussed. Since there is no delay before the initial frame is drawn, there is no need to use a whole frame; only the properties section to tell us what the object should start out looking like.  

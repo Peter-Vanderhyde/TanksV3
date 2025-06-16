@@ -84,7 +84,7 @@ def load_animation_images():
     in the game's images dictionary as {image_path:image_object}. It then returns the full dictionary."""
 
     # This is first called to correctly format any animations using the "create frames" option.
-    # [More Info](animation_syntax.pdf#Create Frames)
+    # See 'animation_syntax.pdf' Create Frames section.
     animations.format_animations()
     # A container to store all animations as {image_path:image_obj}
     animation_images = {}
